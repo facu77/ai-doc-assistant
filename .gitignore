@@ -1,0 +1,36 @@
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+services/gateway/dist/
+coverage/
+
+# Datos y artefactos locales
+data/raw/
+data/processed/
+mlruns/
+mlartifacts/
+qdrant_storage/
+evals/runs/*.json
+!evals/runs/.gitkeep
+
+# Claude Code (config local por persona)
+.claude/settings.local.json
+
+# Sistema
+.DS_Store

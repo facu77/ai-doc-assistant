@@ -1,0 +1,7 @@
+# Docker Compose del POC. Los servicios se agregan con sus changes:
+#   qdrant          -> add-vector-index
+#   ai, gateway     -> add-api-and-gateway
+#   mlflow, grafana -> add-observability-security
+name: ai-doc-assistant
+
+services: {}
