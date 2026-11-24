@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import unicodedata
 
-_REPLACEMENT_CHAR = "�"
+_REPLACEMENT_CHAR = "\ufffd"
 # Uso privado, sustitutos y puntos de código sin asignar: aparecen en capas de texto rotas.
 _GARBAGE_CATEGORIES = frozenset({"Co", "Cs", "Cn"})
 

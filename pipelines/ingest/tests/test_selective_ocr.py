@@ -122,9 +122,9 @@ def test_los_umbrales_de_deteccion_son_configurables(
         pytest.param("x" * 49, False, id="49-caracteres"),
         pytest.param("  ".join(["xxxxx"] * 10), True, id="los-blancos-no-cuentan-pero-alcanza"),
         pytest.param(" \n " * 40, False, id="solo-blancos"),
-        pytest.param("�" * 60, False, id="capa-de-texto-rota-ratio-0"),
-        pytest.param("x" * 54 + "�" * 6, True, id="ratio-0.9-justo"),
-        pytest.param("x" * 53 + "�" * 7, False, id="ratio-menor-a-0.9"),
+        pytest.param("\ufffd" * 60, False, id="capa-de-texto-rota-ratio-0"),
+        pytest.param("x" * 54 + "\ufffd" * 6, True, id="ratio-0.9-justo"),
+        pytest.param("x" * 53 + "\ufffd" * 7, False, id="ratio-menor-a-0.9"),
     ],
 )
 def test_deteccion_nativa_con_50_caracteres_y_ratio_0_9(text: str, expected: bool) -> None:
@@ -133,6 +133,6 @@ def test_deteccion_nativa_con_50_caracteres_y_ratio_0_9(text: str, expected: boo
 
 def test_printable_ratio_ignora_blancos_y_penaliza_caracteres_de_reemplazo() -> None:
     assert printable_ratio("ab cd") == 1.0
-    assert printable_ratio("ab��") == 0.5
+    assert printable_ratio("ab\ufffd\ufffd") == 0.5
     assert printable_ratio("ab\x07\x07") == 0.5
     assert printable_ratio("") == 0.0
