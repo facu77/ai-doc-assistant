@@ -32,7 +32,7 @@ El POC tiene que poder levantarlo otra persona con un comando y tiene que defend
 ## Preguntas abiertas
 
 1. ¿Helm o manifiestos planos con Kustomize en `deploy/k8s`? El design propone Helm por los `values` y por `helm lint`.
-2. Embeddings en el gate de CI: ¿modelo local chico (por ejemplo `sentence-transformers`) o una caché de embeddings versionada? Depende de la pregunta 3 de `add-llm-client`.
+2. ~~¿Qué embeddings usa el gate de CI?~~ **Resuelta** en `add-llm-client`: el modelo local `multilingual-e5-small`, en CPU, con la caché del modelo en Actions.
 3. ¿Qué tolerancia usamos? El design propone 0,02 absoluto sobre recall@5 y MRR. ¿Gateamos también fidelidad y relevancia (requieren juez real y clave) o las dejamos para el workflow manual?
 4. ¿La línea base de CI (perfil `ci`, con LLM `fake`) vive en `evals/baseline.json` junto a la del perfil completo o en un archivo separado? Lo tiene que acordar `add-rag-core`.
 5. ¿Configuramos branch protection con checks requeridos? Es una acción manual fuera del repo.

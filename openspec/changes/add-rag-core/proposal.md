@@ -35,7 +35,7 @@ El valor del POC está en responder preguntas sobre los documentos con citas ver
 1. ¿Quién escribe el set de oro? Propuesta: el agente genera un borrador desde el corpus en un archivo aparte, el humano lo revisa y lo copia a `evals/golden/`. Así se respeta que el agente no lo toque.
 2. ¿Qué umbrales aceptamos para la línea base? Propuesta: recall@5 de 0,80 o más, fidelidad de 0,85 o más, corrección de citas de 0,90 o más, precisión de abstención de 0,80 o más y p95 de 4 s o menos en local.
 3. ¿Qué tolerancia usa `--check`? Propuesta: 0,02 absoluto para las métricas de calidad y 20% relativo para el p95.
-4. ¿Qué modelo usamos como juez y de qué proveedor? Propuesta: un modelo de una familia distinta a la del generador, para reducir el sesgo de autopreferencia.
+4. ~~¿Qué modelo usamos como juez?~~ **Resuelta** (2026-11-24): `claude-haiku-5-5`, el mismo que el generador. Se acepta el sesgo de autopreferencia y se mitiga con la verificación humana del juez sobre una muestra (ver design). Si la verificación muestra un desacuerdo alto, se revisa la decisión.
 5. ¿Qué corre el gate en CI, sin claves? Propuesta: solo las métricas deterministas (recall@5, MRR, citas, abstención) con embeddings y LLM `fake`; las métricas con juez corren solo cuando hay claves.
 6. ¿Qué proporción de preguntas sin respuesta incluye el set? Propuesta: entre 15% y 20%.
 7. ¿La abstención se decide por un umbral de score de recuperación, por el propio LLM o por ambos? Ver design.

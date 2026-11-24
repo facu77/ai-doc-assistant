@@ -2,9 +2,9 @@
 
 ## 1. Contrato y configuración
 
-- [ ] 1.1 Usar `docs-checker` para confirmar las firmas de `pydantic-settings` y de los SDKs `anthropic` y `openai` en las versiones instaladas
+- [ ] 1.1 Usar `docs-checker` para confirmar las firmas de `pydantic-settings`, de los SDKs `anthropic` (incluida la salida estructurada) y `openai`, y de `sentence-transformers` en las versiones instaladas
 - [ ] 1.2 Definir `LLMSettings`, `LLMResponse`, `Usage` y la jerarquía `LLMError`
-- [ ] 1.3 Definir el Protocol `LLMClient` (complete, stream, embed) y la fábrica `build_llm_client`
+- [ ] 1.3 Definir los Protocols `LLMClient` (complete, stream, complete_structured) y `Embedder` (embed_queries, embed_passages), con sus fábricas
 
 ## 2. Tests primero
 
@@ -15,8 +15,9 @@
 
 - [ ] 3.1 Proveedor `fake` determinista
 - [ ] 3.2 Política de reintentos y timeout
-- [ ] 3.3 Adaptadores de Anthropic, OpenAI y Ollama (este último, si se confirma en las preguntas abiertas)
-- [ ] 3.4 Log estructurado de uso, con un test que verifica la ausencia del prompt
+- [ ] 3.3 Adaptadores de Anthropic y OpenAI, con salida estructurada
+- [ ] 3.4 `Embedder` local (`multilingual-e5-small`, CPU, vectores normalizados) y `Embedder` fake determinista
+- [ ] 3.5 Log estructurado de uso, con un test que verifica la ausencia del prompt
 
 ## 4. Cierre
 

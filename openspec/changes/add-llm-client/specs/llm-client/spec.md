@@ -72,9 +72,13 @@ El cliente SHALL registrar por cada llamada el proveedor, el modelo, los tokens,
 - **WHEN** se completa una llamada cuyo prompt contiene `secreto-de-prueba`
 - **THEN** se emite un log estructurado con los campos de uso, y la cadena `secreto-de-prueba` no aparece en ningún log
 
-### Requirement: Embeddings
-El cliente SHALL generar embeddings para una lista de textos, devolver un vector por texto con la dimensión declarada por el modelo y procesar las entradas grandes en lotes.
+### Requirement: Salida estructurada
+El cliente SHALL permitir pedir una respuesta que cumpla un esquema declarado y devolverla ya validada como un objeto tipado. Si después de los reintentos configurados la respuesta no cumple el esquema, el cliente MUST fallar con un error tipado de validación.
 
-#### Scenario: Lote de embeddings
-- **WHEN** se piden embeddings para 250 textos con un tamaño de lote de 100
-- **THEN** se devuelven 250 vectores en el mismo orden, todos de la dimensión declarada, en 3 llamadas al proveedor
+#### Scenario: Respuesta válida
+- **WHEN** se pide una salida estructurada con un esquema `{herramienta: str, argumentos: objeto}` y el proveedor devuelve un JSON que lo cumple
+- **THEN** el consumidor recibe un objeto tipado con esos campos
+
+#### Scenario: Respuesta inválida
+- **WHEN** el proveedor devuelve un texto que no es JSON válido para el esquema en todos los intentos
+- **THEN** la llamada falla con un error de validación tipado, que incluye la cantidad de intentos y no incluye el contenido del prompt

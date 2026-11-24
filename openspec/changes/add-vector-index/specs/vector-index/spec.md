@@ -34,6 +34,17 @@ Reindexar un documento MUST reemplazar sus chunks anteriores sin duplicarlos.
 - **WHEN** se indexa dos veces el mismo documento
 - **THEN** la cantidad de chunks del documento en el índice no cambia
 
+### Requirement: Compatibilidad del modelo de embeddings
+El índice SHALL registrar el identificador del modelo de embeddings y la dimensión con los que se creó. El sistema MUST rechazar, con un error que indique que hay que reindexar, toda indexación o búsqueda hecha con un modelo o una dimensión distintos.
+
+#### Scenario: Cambio de modelo sin reindexar
+- **WHEN** el índice se creó con `multilingual-e5-small` (384) y el servicio arranca con `EMBEDDINGS_MODEL=BAAI/bge-m3` (1024)
+- **THEN** el arranque falla con un error que nombra los dos modelos e indica reindexar, y no se ejecuta ninguna búsqueda
+
+#### Scenario: Mismo modelo
+- **WHEN** el servicio arranca con el mismo modelo y la misma dimensión con los que se creó el índice
+- **THEN** el arranque continúa normalmente
+
 ### Requirement: Benchmark reproducible
 El repositorio SHALL incluir un benchmark que reporte recall@10 contra la búsqueda exacta, latencia p50 y p95, tiempo de indexación y memoria para cada backend, y MUST guardar el resultado en un archivo versionable.
 

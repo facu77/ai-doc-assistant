@@ -33,15 +33,15 @@ Llegan de las changes anteriores `LLMClient` (completar, streaming y embeddings)
   - Corrección de citas: proporción de citas válidas cuya página está entre las `expected_sources`.
   - Precisión de abstención: en las preguntas con tag `unanswerable`, proporción en que el sistema se abstuvo; también se reporta la tasa de falsas abstenciones en las que sí tienen respuesta.
   - Latencia p50 y p95 de punta a punta por pregunta, con 3 preguntas de calentamiento descartadas.
-- **Juez**: `LLMClient` separado, configurado por `EVAL_JUDGE_PROVIDER` y `EVAL_JUDGE_MODEL`, con temperatura 0 y salida JSON validada con Pydantic. Si el JSON es inválido se reintenta una vez y después la pregunta cuenta como `judge_error` (no como 0).
+- **Juez**: `LLMClient` separado, configurado por `EVAL_JUDGE_PROVIDER` y `EVAL_JUDGE_MODEL`, con salida estructurada validada con Pydantic. Por defecto se usa `claude-haiku-5-5`, el mismo modelo que el generador. No se fija `temperature`: los modelos actuales de Claude rechazan los parámetros de muestreo (`temperature`, `top_p` y `top_k`) con un error 400. La variabilidad se controla con rúbricas binarias y se mide repitiendo la corrida. Si el JSON es inválido se reintenta una vez y después la pregunta cuenta como `judge_error` (no como 0).
 - **Salida de la corrida**: `evals/runs/<timestamp>_<variant>.json` con commit, variante, configuración, métricas agregadas y por pregunta. Si `MLFLOW_TRACKING_URI` está definida, se registran parámetros, métricas y el JSON como artefacto. Sin MLflow la corrida funciona igual.
 - **Gate `--check`**: compara contra `evals/baseline.json` métrica por métrica con la tolerancia de cada una (absoluta para calidad, relativa para latencia) y sale con código 1 si alguna empeora más de lo tolerado. `--update-baseline` reescribe la línea base y solo se usa a mano.
 - **Set oculto**: `run_eval.py --golden <ruta>` acepta otro archivo con el mismo formato; el set oculto vive fuera del repo y nunca se commitean sus corridas.
 
 ## Risks / Trade-offs
 
-- **Sesgo del juez**: un LLM tiende a preferir textos de su misma familia, respuestas largas y la primera opción. Se mitiga con un juez de otra familia que el generador, rúbricas con criterios binarios por afirmación, temperatura 0 y una validación manual de 10 preguntas al principio, con su acuerdo humano-juez reportado en `RESULTS.md`.
-- **Costo y ruido de las métricas con juez**: varían entre corridas aunque la temperatura sea 0. Por eso el gate en CI usa solo métricas deterministas, y las comparaciones de variantes reportan la media de 3 corridas.
+- **Sesgo del juez**: un LLM tiende a preferir textos de su misma familia, respuestas largas y la primera opción. Como el juez y el generador son el mismo modelo (decisión del 2026-11-24), la auto-preferencia es el riesgo principal. Se mitiga con rúbricas con criterios binarios por afirmación, temperatura 0 y una validación manual de 10 preguntas al principio, con su acuerdo humano-juez reportado en `RESULTS.md`.
+- **Costo y ruido de las métricas con juez**: varían entre corridas aunque se use la misma rúbrica. Por eso el gate en CI usa solo métricas deterministas, y las comparaciones de variantes reportan la media de 3 corridas.
 - **Set chico**: con 50 preguntas, una diferencia de 0,02 puede ser ruido. Se reporta el intervalo de confianza por *bootstrap* junto con cada métrica.
 - **Sobreajuste al set de oro**: se mitiga con la regla de no mirar las preguntas, el set de desarrollo separado para calibrar y el set oculto del autor.
 - **Reindexar por variante de chunking** duplica el almacenamiento en Qdrant. Es aceptable para el tamaño del corpus.
