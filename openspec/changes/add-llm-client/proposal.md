@@ -38,4 +38,11 @@ Todo el POC (RAG, agente y la evaluación con un LLM como juez) depende de model
 
 ## Preguntas abiertas
 
-Ninguna por ahora.
+Surgieron al implementar. Cada una tiene una implementación provisoria, que decide el autor.
+
+1. **Cortes de conexión**: la spec nombra timeout, 429 y 5xx como transitorios. Hoy un `APIConnectionError` también se reintenta, porque es un fallo de red y no un rechazo del proveedor. La alternativa es no reintentarlo: es más estricto con la spec, pero un corte breve de red le llegaría al usuario como error. **Recomendación**: mantener el reintento y sumarlo a la spec.
+2. **`Retry-After` sin tope**: se respeta el valor completo, aunque sea de 600 s. La alternativa es fallar enseguida con `LLMRateLimitError` si supera un máximo, por ejemplo 30 s: el consumidor responde antes, a cambio de no respetar al proveedor. **Recomendación**: definir el tope cuando exista el endpoint de chat (`add-rag-core`).
+3. **Parámetros `system` y `max_tokens`** en `complete`, `stream` y `complete_structured`: no están en la spec. `max_tokens` es obligatorio en Anthropic y el RAG va a necesitar un *system prompt*. Hoy el default es 1024 y no hay variable de entorno. **Recomendación**: dejarlos como parámetros por llamada.
+4. **`LLM_PROVIDER` y `EMBEDDINGS_PROVIDER` son obligatorias**: no tienen default. Si faltan, el arranque falla con un error de configuración, aunque `.env.example` sugiere `fake` y `local`. La alternativa es tomar esos valores por defecto: es más cómodo, pero un deploy mal configurado usaría el fake sin avisar.
+5. **Salida estructurada con argumentos libres**: `anthropic.transform_schema` convierte `dict[str, object]` en un objeto con `additionalProperties: false` y sin propiedades. Con Anthropic, `argumentos` volvería siempre vacío. Esto afecta a `add-agent`: conviene un esquema por herramienta o `argumentos` como JSON en un string.
+6. **`httpx` por `httpx2`**: la propuesta lista `httpx`, pero los SDKs instalados (anthropic 2.14 y openai 3.59) usan `httpx2`. Se declaró `httpx2` y se sacó `httpx`.
