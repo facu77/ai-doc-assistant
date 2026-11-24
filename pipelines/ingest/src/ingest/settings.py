@@ -25,4 +25,10 @@ class IngestSettings(BaseSettings):
     )
     ocr_dpi: int = Field(default=300, gt=0, description="dpi al rasterizar páginas para OCR.")
     ocr_lang: str = Field(default="spa+eng", description="Idiomas de Tesseract.")
+    ocr_psm: int = Field(
+        default=3,
+        ge=0,
+        le=13,
+        description="Modo de segmentación de página de Tesseract (3: automático).",
+    )
     ocr_timeout_s: float = Field(default=120.0, gt=0, description="Timeout por página de OCR.")
