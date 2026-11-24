@@ -1,0 +1,17 @@
+{
+  "source": "02-politica-viaticos.pdf",
+  "category": "native",
+  "title": "Política de viáticos y gastos de viaje",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Política de viáticos y gastos de viaje\nVersión 2.0. Vigente desde el 1 de julio de 2026. Aplica a todo viaje por trabajo que requiera\npernoctar fuera del domicilio habitual.\n1. Montos diarios de viático\nEl viático diario cubre comidas y traslados urbanos. Los montos vigentes son:\nDestino Monto diario\nCABA y Gran Buenos Aires $ 38.000\nInterior del país $ 45.000\nPaíses limítrofes USD 90\nResto del mundo USD 140\nEl alojamiento no está incluido en el viático y se reserva por la agencia de viajes contratada\npor Acme S.A.\n2. Anticipos\nSe puede solicitar un anticipo de hasta el 70% del viático estimado, con al menos 5 días\nhábiles de anticipación al viaje.\n3. Uso de vehículo propio\nEl uso de vehículo propio se reintegra a $ 210 por kilómetro recorrido, más peajes y\nestacionamiento con comprobante."
+    },
+    {
+      "page_number": 2,
+      "kind": "native",
+      "text": "4. Rendición de gastos\nLa rendición se presenta dentro de los 10 días hábiles posteriores al regreso, con el\nformulario RH-12 y los comprobantes originales o digitalizados.\nLos gastos sin comprobante se aceptan hasta un máximo de $ 15.000 por viaje y deben\njustificarse por escrito.\nNo se reintegran bebidas alcohólicas, multas de tránsito ni gastos personales.\n5. Aprobaciones\nLos viajes nacionales los aprueba el responsable directo. Los viajes al exterior requieren\nademás la aprobación de la Gerencia General.\nLas consultas se envían a viajes@acme.example."
+    }
+  ]
+}

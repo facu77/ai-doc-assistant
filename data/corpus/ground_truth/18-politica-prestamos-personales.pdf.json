@@ -1,0 +1,17 @@
+{
+  "source": "18-politica-prestamos-personales.pdf",
+  "category": "noisy_scan",
+  "title": "Política de préstamos al personal",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Política de préstamos al personal\nVigente desde el 1 de junio de 2026.\n1. Monto\nSe puede pedir un préstamo de hasta 2 sueldos brutos, sin interés, con al menos 1 año de\nantigüedad.\n2. Devolución\nEl préstamo se devuelve en hasta 12 cuotas mensuales, que se descuentan del recibo de\nsueldo."
+    },
+    {
+      "page_number": 2,
+      "kind": "scan",
+      "text": "3. Condiciones\nSolo se puede tener un préstamo vigente por vez. Un nuevo préstamo se pide 3 meses\ndespués de cancelar el anterior.\nSi la relación laboral termina, el saldo se descuenta de la liquidación final.\nLas solicitudes se presentan a prestamos@acme.example."
+    }
+  ]
+}

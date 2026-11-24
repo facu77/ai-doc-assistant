@@ -1,0 +1,17 @@
+{
+  "source": "20-constancia-capacitacion.pdf",
+  "category": "mixed",
+  "title": "Constancia de capacitación con sello de recepción",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Registro de capacitaciones obligatorias\nEste documento reúne la constancia de capacitación entregada por la persona y su registro\nen el legajo. La constancia escaneada está en la página 2.\nRecursos Humanos sella la constancia al recibirla y la carga en el portal dentro de los 5 días\nhábiles."
+    },
+    {
+      "page_number": 2,
+      "kind": "scan",
+      "text": "Constancia de capacitación\nSe deja constancia de que Pablo Sosa, legajo 6012, completó el curso de prevención de\nriesgos laborales.\nDuración del curso: 8 horas.\nFecha de aprobación: 28 de octubre de 2026.\nCalificación obtenida: 9 sobre 10.\nInstructora: Valeria Ortiz, Seguridad e Higiene.\nRECIBIDO RRHH 02/11/2026"
+    }
+  ]
+}

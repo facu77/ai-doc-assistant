@@ -1,0 +1,22 @@
+{
+  "source": "19-manual-evaluacion-desempeno.pdf",
+  "category": "mixed",
+  "title": "Manual de evaluación de desempeño",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Manual de evaluación de desempeño\nLa evaluación de desempeño se hace una vez por año, en noviembre, y tiene una revisión\nde mitad de año en mayo.\n1. Etapas\nPrimero, cada persona completa su autoevaluación en el portal. Después, el responsable\ndirecto completa su evaluación. Por último, ambos tienen una reunión de devolución de al\nmenos 30 minutos.\nLa escala de calificación está en el anexo escaneado de la página siguiente."
+    },
+    {
+      "page_number": 2,
+      "kind": "scan",
+      "text": "Anexo A - Escala de calificación\n1 - No cumple las expectativas del puesto.\n2 - Cumple parcialmente las expectativas.\n3 - Cumple las expectativas.\n4 - Supera las expectativas.\n5 - Desempeño excepcional y referente para el equipo.\nCon calificación 1 se arma un plan de mejora de 90 días."
+    },
+    {
+      "page_number": 3,
+      "kind": "native",
+      "text": "2. Calibración\nLas calificaciones de cada área se calibran en un comité con la Gerencia y Recursos\nHumanos antes de comunicarlas. La calificación final se usa para el bono anual por\ndesempeño.\nLas consultas se envían a desempeno@acme.example."
+    }
+  ]
+}

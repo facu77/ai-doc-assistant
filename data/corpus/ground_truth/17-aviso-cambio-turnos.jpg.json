@@ -1,0 +1,12 @@
+{
+  "source": "17-aviso-cambio-turnos.jpg",
+  "category": "noisy_scan",
+  "title": "Aviso de cambio de turnos en planta",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Aviso a todo el personal de planta\nCambio de turnos desde el 4 de enero de 2027\nTurno mañana: de 6 a 14 horas.\nTurno tarde: de 14 a 22 horas.\nTurno noche: de 22 a 6 horas, con un adicional del 15% sobre el básico.\nLa rotación de turnos pasa a ser cada 2 semanas.\nLas solicitudes de cambio de turno se presentan al supervisor con 7 días de anticipación.\nGerencia de Operaciones, planta de Pilar."
+    }
+  ]
+}

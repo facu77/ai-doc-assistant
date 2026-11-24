@@ -1,0 +1,12 @@
+{
+  "source": "09-formulario-solicitud-vacaciones.pdf",
+  "category": "clean_scan",
+  "title": "Formulario RH-07 de solicitud de vacaciones",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Formulario RH-07\nSolicitud de vacaciones\nEmpleada: Lucía Fernández\nLegajo: 4821\nÁrea: Finanzas\nAntigüedad: 6 años\nPeríodo solicitado: del 11 de enero de 2027 al 31 de enero de 2027\nCantidad de días corridos: 21\nSaldo disponible antes de la solicitud: 21 días\nReemplazo durante la ausencia: Martín Gómez, legajo 3954\nFecha de la solicitud: 2 de noviembre de 2026\nAprobado por: Martín Gómez, Jefe de Tesorería\nEstado: aprobado el 4 de noviembre de 2026"
+    }
+  ]
+}

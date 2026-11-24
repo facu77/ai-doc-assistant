@@ -1,0 +1,12 @@
+{
+  "source": "13-formulario-rendicion-gastos.jpg",
+  "category": "clean_scan",
+  "title": "Formulario RH-12 de rendición de gastos",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Formulario RH-12\nRendición de gastos de viaje\nEmpleado: Diego Ramírez\nLegajo: 3307\nÁrea: Ventas\nViaje: Córdoba, del 6 al 8 de octubre de 2026\nConcepto Importe\nViático 3 días $ 135.000\nTaxi aeropuerto $ 12.400\nEstacionamiento $ 6.800\nTotal rendido $ 154.200\nAnticipo recibido: $ 94.500\nSaldo a favor del empleado: $ 59.700\nFecha de presentación: 14 de octubre de 2026"
+    }
+  ]
+}

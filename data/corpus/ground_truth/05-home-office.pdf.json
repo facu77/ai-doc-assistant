@@ -1,0 +1,17 @@
+{
+  "source": "05-home-office.pdf",
+  "category": "native",
+  "title": "Política de trabajo remoto",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Política de trabajo remoto\nVigente desde el 1 de abril de 2026. Aplica a los puestos que la Gerencia del área declare\ncompatibles con el trabajo remoto.\n1. Modalidad\nSe puede trabajar en forma remota hasta 3 días por semana. Los martes y jueves son días\nde presencia para todos los equipos de oficina central.\nLa modalidad se solicita con al menos 5 días hábiles de anticipación y la aprueba el\nresponsable directo.\n2. Horario de disponibilidad\nEn los días remotos la persona está disponible de 10 a 16 horas para reuniones y consultas,\ndentro de su jornada habitual de 8 horas.\n3. Compensación de gastos\nSe paga una compensación mensual de $ 18.000 por conectividad y servicios. Además, se\nreintegra una única vez hasta $ 150.000 para la compra de una silla ergonómica."
+    },
+    {
+      "page_number": 2,
+      "kind": "native",
+      "text": "4. Seguridad\nEl trabajo remoto se hace siempre con la VPN corporativa y en redes de confianza. No se\nusan redes públicas abiertas para acceder a sistemas internos.\n5. Desconexión digital\nFuera del horario de trabajo nadie está obligado a responder mensajes ni correos, salvo\nguardias acordadas por escrito.\nLas consultas se envían a personas@acme.example."
+    }
+  ]
+}

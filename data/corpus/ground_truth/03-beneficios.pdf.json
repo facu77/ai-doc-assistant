@@ -1,0 +1,17 @@
+{
+  "source": "03-beneficios.pdf",
+  "category": "native",
+  "title": "Beneficios para el personal",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Beneficios para el personal 2026\nEste documento resume los beneficios vigentes desde el 1 de enero de 2026 para todo el\npersonal en relación de dependencia.\n1. Cobertura médica\nAcme S.A. cubre el plan 310 de la empresa de medicina prepaga contratada para la\npersona y su grupo familiar primario, sin costo adicional.\n2. Almuerzo\nSe acredita una tarjeta de almuerzo de $ 9.500 por día trabajado, incluidos los días de\ntrabajo remoto.\n3. Actividad física\nSe reintegra el 50% de la cuota de un gimnasio o club, con un tope de $ 25.000 por mes,\ncontra la presentación del comprobante.\n4. Guardería\nPara hijos e hijas menores de 4 años se reintegra la cuota de guardería o jardín maternal\nhasta $ 120.000 por mes por cada hijo o hija."
+    },
+    {
+      "page_number": 2,
+      "kind": "native",
+      "text": "5. Día de cumpleaños\nCada persona tiene libre el día de su cumpleaños. Si cae en fin de semana o feriado, se\ntoma el día hábil siguiente.\n6. Bono anual por desempeño\nEl bono anual se paga en marzo y va de 0 a 2 sueldos según la calificación de la evaluación\nde desempeño y el resultado de la compañía.\n7. Kit de bienvenida\nAl ingresar, cada persona recibe una notebook, auriculares y un kit de bienvenida. La\nnotebook se renueva cada 3 años.\nLas consultas se envían a beneficios@acme.example."
+    }
+  ]
+}

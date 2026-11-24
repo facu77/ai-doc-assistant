@@ -1,0 +1,12 @@
+{
+  "source": "10-memo-aguinaldo.pdf",
+  "category": "clean_scan",
+  "title": "Memo sobre el pago del aguinaldo",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Memo interno RH-2026-041\nPara: todo el personal\nDe: Gerencia de Recursos Humanos\nFecha: 20 de noviembre de 2026\nPago de la segunda cuota del aguinaldo\nLa segunda cuota del sueldo anual complementario se acredita el 18 de diciembre de 2026,\njunto con el bono de fin de año de $ 85.000 para todo el personal con más de 3 meses de\nantigüedad.\nLos recibos de sueldo estarán disponibles en el portal de autogestión desde el 17 de\ndiciembre de 2026.\nLas consultas se envían a sueldos@acme.example hasta el 23 de diciembre."
+    }
+  ]
+}
