@@ -5,8 +5,8 @@ from __future__ import annotations
 import time
 
 import pytest
-from ai_doc_assistant.llm import LLMTimeoutError, ResilientLLMClient, RetryPolicy
 
+from ai_doc_assistant.llm import LLMTimeoutError, ResilientLLMClient, RetryPolicy
 from tests.fakes.llm import Hang, Reply, ScriptedProvider
 
 

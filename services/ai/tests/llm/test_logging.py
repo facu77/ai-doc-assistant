@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 
 import pytest
-from ai_doc_assistant.llm import LLMProviderError, LLMSettings, build_llm_client
 from pydantic import BaseModel
 
+from ai_doc_assistant.llm import LLMProviderError, LLMSettings, build_llm_client
 from tests.fakes.llm import Fail, FakeClock, Reply, ScriptedProvider, error_503, make_client
 
 SECRETO = "secreto-de-prueba"

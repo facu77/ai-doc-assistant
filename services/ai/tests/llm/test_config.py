@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from ai_doc_assistant.llm import (
     LLMClient,
     LLMConfigError,

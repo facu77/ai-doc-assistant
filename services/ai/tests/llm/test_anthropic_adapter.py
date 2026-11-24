@@ -10,6 +10,8 @@ import logging
 
 import anthropic
 import pytest
+from pydantic import BaseModel
+
 from ai_doc_assistant.llm import (
     LLMError,
     LLMProviderError,
@@ -19,8 +21,6 @@ from ai_doc_assistant.llm import (
     RetryPolicy,
 )
 from ai_doc_assistant.llm.providers.anthropic_provider import AnthropicProvider
-from pydantic import BaseModel
-
 from tests.fakes.http import (
     FakeServer,
     anthropic_message,

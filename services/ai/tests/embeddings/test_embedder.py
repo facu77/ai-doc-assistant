@@ -6,6 +6,7 @@ import asyncio
 import math
 
 import pytest
+
 from ai_doc_assistant.embeddings import (
     DEFAULT_EMBEDDINGS_MODEL,
     Embedder,
@@ -15,7 +16,6 @@ from ai_doc_assistant.embeddings import (
     build_embedder,
     load_embeddings_settings,
 )
-
 from tests.fakes.embeddings import RecordingEncoder
 
 

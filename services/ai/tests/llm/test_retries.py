@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import pytest
+
 from ai_doc_assistant.llm import (
     LLMProviderError,
     LLMRateLimitError,
     LLMTimeoutError,
     RetryPolicy,
 )
-
 from tests.fakes.llm import Fail, FakeClock, Reply, ScriptedProvider, error_503, make_client
 
 

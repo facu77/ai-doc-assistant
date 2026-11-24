@@ -80,7 +80,7 @@ def _sse(events: Sequence[tuple[str, dict[str, object]]]) -> bytes:
 def anthropic_stream(
     chunks: Sequence[str], *, input_tokens: int = 11, output_tokens: int = 4
 ) -> Responder:
-    message = {
+    message: dict[str, object] = {
         "id": "msg_prueba",
         "type": "message",
         "role": "assistant",

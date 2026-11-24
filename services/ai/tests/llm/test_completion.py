@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import pytest
-from ai_doc_assistant.llm import LLMProviderError, LLMSettings, build_llm_client
 
+from ai_doc_assistant.llm import LLMProviderError, LLMSettings, build_llm_client
 from tests.fakes.llm import Fail, FakeClock, Reply, ScriptedProvider, error_503, make_client
 
 

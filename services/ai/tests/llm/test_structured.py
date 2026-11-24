@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 
 import pytest
-from ai_doc_assistant.llm import LLMSettings, LLMValidationError, build_llm_client
 from pydantic import BaseModel
 
+from ai_doc_assistant.llm import LLMSettings, LLMValidationError, build_llm_client
 from tests.fakes.llm import Fail, Reply, ScriptedProvider, error_503, make_client
 
 

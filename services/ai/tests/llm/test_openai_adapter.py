@@ -9,6 +9,8 @@ import json
 
 import openai
 import pytest
+from pydantic import BaseModel
+
 from ai_doc_assistant.llm import (
     LLMProviderError,
     LLMRateLimitError,
@@ -17,8 +19,6 @@ from ai_doc_assistant.llm import (
     RetryPolicy,
 )
 from ai_doc_assistant.llm.providers.openai_provider import OpenAIProvider
-from pydantic import BaseModel
-
 from tests.fakes.http import FakeServer, openai_completion, openai_stream, raise_timeout, status
 from tests.fakes.llm import FakeClock
 
