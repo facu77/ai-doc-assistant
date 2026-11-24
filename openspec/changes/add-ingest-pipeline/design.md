@@ -14,6 +14,8 @@ El pipeline corre como CLI (`uv run ingest <dir> --out <dir>`) y también lo va 
 **Non-Goals:**
 - Chunking (lo resuelve `add-vector-index` o `add-rag-core`).
 - Formatos Office, HTML y correo.
+- Estructura de tablas: se extraen como texto plano (limitación documentada).
+- OCR en la nube.
 
 ## Decisions
 
@@ -21,7 +23,7 @@ El pipeline corre como CLI (`uv run ingest <dir> --out <dir>`) y también lo va 
 - **OCR**: Tesseract con `spa+eng` a 300 dpi, detrás de un Protocol `OCREngine` para poder comparar motores.
 - **CER**: distancia de Levenshtein a nivel de caracteres (`jiwer.cer`) sobre el texto normalizado (NFC, espacios colapsados).
 - **Idempotencia**: el `doc_id` es el `sha256` del archivo. Si ya existe una salida con el mismo hash y la misma versión de pipeline, se omite.
-- **Corpus ficticio**: `scripts/make_corpus.py` genera PDFs con `reportlab`. Los escaneos se simulan rasterizando, rotando ±2°, agregando ruido gaussiano y bajando a 200 dpi.
+- **Corpus ficticio**: dominio de RRHH y políticas internas de "Acme S.A.", con empleados y datos 100% inventados. `scripts/make_corpus.py` genera PDFs con `reportlab`. Los escaneos se simulan rasterizando, rotando ±2°, agregando ruido gaussiano y bajando a 200 dpi.
 
 ## Risks / Trade-offs
 

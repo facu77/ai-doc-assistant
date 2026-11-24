@@ -33,11 +33,11 @@ El pipeline SHALL calcular el CER de cada documento que tenga texto de referenci
 
 #### Scenario: Escaneo limpio
 - **WHEN** se ingestan los documentos del corpus marcados como escaneo limpio
-- **THEN** el CER medio es menor o igual al umbral acordado para escaneo limpio (propuesto: 2%)
+- **THEN** el CER medio es menor o igual a 2%
 
 #### Scenario: Escaneo ruidoso
 - **WHEN** se ingestan los documentos del corpus marcados como escaneo ruidoso
-- **THEN** el CER medio es menor o igual al umbral acordado para escaneo ruidoso (propuesto: 8%)
+- **THEN** el CER medio es menor o igual a 8%
 
 ### Requirement: Reporte de ingesta
 El pipeline SHALL generar un reporte en JSON y en Markdown con documentos procesados, páginas por método, CER por documento y promedio, tiempo total, tiempo por página y errores.
@@ -55,6 +55,14 @@ Reingestar un documento sin cambios MUST NOT duplicar su salida ni volver a proc
 
 ### Requirement: Datos ficticios
 El corpus versionado en el repo MUST ser ficticio y no contener PII real.
+
+#### Scenario: Composición del corpus
+- **WHEN** se genera el corpus
+- **THEN** contiene 20 documentos: 8 nativos, 6 escaneos limpios, 4 escaneos ruidosos y 2 PDFs mixtos, cada uno con su texto de referencia por página
+
+#### Scenario: Página escaneada con poco texto nativo
+- **WHEN** un PDF mixto tiene una página escaneada que incluye un sello con capa de texto de menos de 50 caracteres
+- **THEN** esa página se procesa con OCR y su texto reconocido incluye el contenido de la imagen
 
 #### Scenario: Generación reproducible
 - **WHEN** se corre el script de generación del corpus con la misma semilla
