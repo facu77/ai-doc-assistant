@@ -17,6 +17,7 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 from ai_doc_assistant.embeddings.base import Vector
+from ai_doc_assistant.embeddings.errors import EmbeddingsConfigError
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
@@ -35,13 +36,19 @@ def e5_prefixes(model_id: str) -> tuple[str, str]:
 
     Regla: los modelos e5 (`intfloat/e5-*`, `intfloat/multilingual-e5-*`) usan
     `"query: "` y `"passage: "`. Las variantes `*-instruct` usan otro formato
-    (`"Instruct: ...\nQuery: "`) que este POC no implementa, y cualquier otro modelo se
-    usa sin prefijo.
+    (`"Instruct: ...\nQuery: "`) que este POC no implementa: se rechazan con
+    `EmbeddingsConfigError` en vez de embeber con un formato incorrecto. Cualquier otro
+    modelo se usa sin prefijo.
     """
     name = model_id.rstrip("/").rsplit("/", 1)[-1].lower()
-    if _E5_NAME.match(name) and "instruct" not in name:
-        return E5_QUERY_PREFIX, E5_PASSAGE_PREFIX
-    return "", ""
+    if not _E5_NAME.match(name):
+        return "", ""
+    if "instruct" in name:
+        raise EmbeddingsConfigError(
+            f"EMBEDDINGS_MODEL={model_id!r}: los modelos e5 -instruct necesitan un prompt "
+            "'Instruct: ...' que no está implementado; usá un e5 sin -instruct"
+        )
+    return E5_QUERY_PREFIX, E5_PASSAGE_PREFIX
 
 
 def load_sentence_transformer(model_id: str) -> SentenceTransformer:
@@ -66,22 +73,25 @@ class LocalEmbedder:
         dimension: int,
         encode_batch: EncodeBatch,
         batch_size: int,
-        query_prefix: str = E5_QUERY_PREFIX,
-        passage_prefix: str = E5_PASSAGE_PREFIX,
+        query_prefix: str | None = None,
+        passage_prefix: str | None = None,
     ) -> None:
+        """Sin prefijos explícitos, se derivan de `model_id` con `e5_prefixes`."""
         if batch_size < 1:
             raise ValueError("batch_size tiene que ser al menos 1")
+        default_query, default_passage = e5_prefixes(model_id)
         self._model_id = model_id
         self._dimension = dimension
         self._encode_batch = encode_batch
         self._batch_size = batch_size
-        self._query_prefix = query_prefix
-        self._passage_prefix = passage_prefix
+        self._query_prefix = default_query if query_prefix is None else query_prefix
+        self._passage_prefix = default_passage if passage_prefix is None else passage_prefix
 
     @classmethod
     def from_pretrained(cls, model_id: str, *, batch_size: int) -> LocalEmbedder:
         """Carga el modelo en CPU (lo descarga la primera vez). Es bloqueante y lento:
         llamalo al arrancar, o con `asyncio.to_thread` desde código async."""
+        e5_prefixes(model_id)  # valida el id antes de cargar (o descargar) el modelo
         model = load_sentence_transformer(model_id)
         dimension = model.get_embedding_dimension()
         if dimension is None:
@@ -100,14 +110,11 @@ class LocalEmbedder:
             vectors: list[Vector] = array.tolist()
             return vectors
 
-        query_prefix, passage_prefix = e5_prefixes(model_id)
         return cls(
             model_id=model_id,
             dimension=dimension,
             encode_batch=encode_batch,
             batch_size=batch_size,
-            query_prefix=query_prefix,
-            passage_prefix=passage_prefix,
         )
 
     @property

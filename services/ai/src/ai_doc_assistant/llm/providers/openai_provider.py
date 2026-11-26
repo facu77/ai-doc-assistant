@@ -91,8 +91,11 @@ class OpenAIProvider:
             "json_schema": {
                 "name": request.output_schema.__name__,
                 "schema": request.output_schema.model_json_schema(),
-                # `strict` exige additionalProperties=false en todo el esquema, y eso
-                # rompe campos libres como `dict[str, object]`. Validamos nosotros.
+                # Decisión del autor: `strict: true` queda afuera. Exige
+                # additionalProperties=false y todos los campos en `required`, algo que
+                # `model_json_schema()` no genera; el SDK lo resuelve solo con una función
+                # privada (`openai.lib._pydantic.to_strict_json_schema`). El esquema ya es
+                # cerrado (`ensure_closed_schema`) y la respuesta la valida Pydantic.
                 "strict": False,
             },
         }

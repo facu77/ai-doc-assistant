@@ -63,6 +63,10 @@ def _walk(
         items = node.get("items")
         if isinstance(items, Mapping):
             _walk(items, f"{path}[]", defs, seen, problems)
+        else:
+            # Una tupla (`tuple[int, str]`) sale como `prefixItems`. `anthropic.transform_schema`
+            # no lo soporta y lo deja como texto en la descripción: el array queda sin tipo.
+            problems.append(f"{path}: array sin `items` (las tuplas no se soportan; usá una lista)")
 
 
 def ensure_closed_schema(schema: type[BaseModel]) -> None:

@@ -40,9 +40,18 @@ esac
 E5_REPO_DIR="${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}/hub}/models--intfloat--multilingual-e5-small"
 e5_cached() { compgen -G "${E5_REPO_DIR}/snapshots/*/model.safetensors" >/dev/null; }
 
-# pytest sale con 5 si no hay tests con el marcador: eso no es un fallo.
+# pytest sale con 5 si no recolectó ningún test con el marcador. En `auto` eso cuenta como
+# OK (el proyecto todavía no tiene tests de integración); con INTEGRATION=1 es un FALLO,
+# porque se pidió correrlos y no corrió ninguno.
 pytest_integration() {
-  (cd "$1" && uv run pytest -q -m integration; rc=$?; [[ $rc -eq 0 || $rc -eq 5 ]])
+  local rc=0
+  (cd "$1" && uv run pytest -q -m integration) || rc=$?
+  if [[ $rc -eq 5 ]]; then
+    echo "pytest no recolectó tests de integración en $1"
+    [[ "$INTEGRATION" == "auto" ]]
+    return
+  fi
+  return "$rc"
 }
 
 # Python: services/ai

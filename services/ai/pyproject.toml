@@ -57,8 +57,9 @@ files = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# `-m "not integration"`: la corrida por defecto (y CI) es offline. Los tests de
-# integración se corren con `make test-integration` (un `-m` posterior pisa a este).
+# `-m "not integration"`: `uv run pytest` es offline. Los tests de integración los corre
+# `scripts/verify.sh` según INTEGRATION (CI usa INTEGRATION=1) o `make test-integration`;
+# un `-m` posterior en la línea de comandos pisa a este.
 addopts = "-ra --strict-markers --strict-config -m 'not integration'"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
