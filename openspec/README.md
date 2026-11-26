@@ -12,6 +12,7 @@ Cada pieza del POC es una change con su propuesta, su diseño, sus specs con esc
 | 6 | `add-agent` | 15 a 20 casos con trayectoria esperada; límites y aprobación humana | 4 | C |
 | 7 | `add-deploy-and-ci` | Compose y kind funcionando; pipeline con gate de evaluación | 5 | B (esqueleto) |
 | 8 | `add-observability-security` | Dashboard, MLflow, gitleaks, PII, ACL y prueba de inyección | 5 | C (después) |
+| 9 | `improve-ocr-quality` | Escaneo limpio en 2 % o menos sin romper las páginas a dos columnas (psm según la estructura de la página) y un perfil de escaneo ruidoso más difícil, con umbral preregistrado | 2 | — |
 
 ## Ciclo por change
 
