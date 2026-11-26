@@ -1,8 +1,11 @@
 """Adaptador de pymupdf: abrir un PDF, leer la capa de texto y rasterizar una página.
 
-Es el único módulo que importa `pymupdf`. Varias funciones de pymupdf no tienen anotaciones
-(`Page.get_text` recibe `*args, **kwargs`), así que acá se valida el tipo de cada valor que
-devuelven y el resto del pipeline trabaja con `str` e `Image.Image`.
+Es el único módulo que importa `pymupdf`. pymupdf 1.28 trae `py.typed`, pero `mypy` ve como
+`Any` casi todo lo que sale de un `Document`: `load_page` no tiene anotaciones, así que la
+página, su `rect`, `get_text(...)`, el `Pixmap` de `get_pixmap` (y su `width`, `height` y
+`samples`), `page_count`, `is_pdf` y `needs_pass` llegan sin tipo (verificado con
+`reveal_type`). Por eso cada valor pasa por `_typed`, que comprueba el tipo en tiempo de
+ejecución antes de entregarlo al resto del pipeline.
 """
 
 from __future__ import annotations
@@ -19,6 +22,12 @@ class PdfReadError(RuntimeError):
     """El archivo no es un PDF legible (corrupto, vacío o cifrado)."""
 
 
+def _typed[T](value: object, expected: type[T], what: str) -> T:
+    if not isinstance(value, expected):
+        raise TypeError(f"pymupdf devolvió {type(value).__name__} para {what}")
+    return value
+
+
 @contextmanager
 def open_pdf(source: Path | bytes) -> Iterator[pymupdf.Document]:
     try:
@@ -29,9 +38,10 @@ def open_pdf(source: Path | bytes) -> Iterator[pymupdf.Document]:
     except (pymupdf.FileDataError, RuntimeError, ValueError) as exc:
         raise PdfReadError(str(exc)) from exc
     try:
-        if not doc.is_pdf:
+        # Se validan como int: en 1.28.2 `needs_pass` devuelve 0/1, no bool (bool es un int).
+        if not _typed(doc.is_pdf, int, "is_pdf"):
             raise PdfReadError("el archivo no es un PDF")
-        if doc.needs_pass:
+        if _typed(doc.needs_pass, int, "needs_pass"):
             raise PdfReadError("el PDF está cifrado")
         yield doc
     finally:
@@ -39,25 +49,32 @@ def open_pdf(source: Path | bytes) -> Iterator[pymupdf.Document]:
 
 
 def page_count(doc: pymupdf.Document) -> int:
-    count = doc.page_count
-    if not isinstance(count, int):
-        raise TypeError(f"page_count inesperado: {type(count).__name__}")
-    return count
+    return _typed(doc.page_count, int, "page_count")
+
+
+def _page(doc: pymupdf.Document, index: int) -> pymupdf.Page:
+    return _typed(doc.load_page(index), pymupdf.Page, "load_page")
 
 
 def page_text(doc: pymupdf.Document, index: int) -> str:
     """Texto de la capa de texto de la página `index` (base 0), en orden del flujo de contenido."""
-    page = doc.load_page(index)
-    text = page.get_text("text")
-    if not isinstance(text, str):
-        raise TypeError(f"get_text devolvió {type(text).__name__}")
-    return text
+    return _typed(_page(doc, index).get_text("text"), str, "get_text")
+
+
+def page_size_points(doc: pymupdf.Document, index: int) -> tuple[float, float]:
+    """Ancho y alto de la página en puntos (1/72 de pulgada)."""
+    rect = _typed(_page(doc, index).rect, pymupdf.Rect, "rect")
+    return float(_typed(rect.width, float, "rect.width")), float(
+        _typed(rect.height, float, "rect.height")
+    )
 
 
 def render_page_gray(doc: pymupdf.Document, index: int, dpi: int) -> Image.Image:
     """Rasteriza la página completa (imágenes y texto) en escala de grises a `dpi`."""
-    page = doc.load_page(index)
-    pix = page.get_pixmap(dpi=dpi, colorspace=pymupdf.csGRAY)
-    image = Image.frombytes("L", (pix.width, pix.height), pix.samples)
+    pix = _typed(
+        _page(doc, index).get_pixmap(dpi=dpi, colorspace=pymupdf.csGRAY), pymupdf.Pixmap, "pixmap"
+    )
+    size = (_typed(pix.width, int, "pixmap.width"), _typed(pix.height, int, "pixmap.height"))
+    image = Image.frombytes("L", size, _typed(pix.samples, bytes, "pixmap.samples"))
     image.info["dpi"] = (dpi, dpi)
     return image

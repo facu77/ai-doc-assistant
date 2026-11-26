@@ -10,6 +10,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
+import numbers
 import os
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -34,7 +36,14 @@ from ingest.models import (
 )
 from ingest.normalize import normalize_text
 from ingest.ocr import OCREngine, OCRError
-from ingest.pdf import PdfReadError, open_pdf, page_count, page_text, render_page_gray
+from ingest.pdf import (
+    PdfReadError,
+    open_pdf,
+    page_count,
+    page_size_points,
+    page_text,
+    render_page_gray,
+)
 from ingest.quality import cer
 from ingest.report import build_report
 from ingest.settings import IngestSettings
@@ -56,6 +65,15 @@ SUPPORTED_SUFFIXES: dict[str, SourceFormat] = {
     ".tif": "tiff",
     ".tiff": "tiff",
 }
+
+MIN_TRUSTED_DPI = 100.0
+MAX_TRUSTED_DPI = 600.0
+"""Fuera de este rango, el dpi que declara una imagen no se cree (72 es el valor por defecto
+de muchas aplicaciones, no la resolución real del escaneo) y se asume `ocr_dpi`."""
+
+MAX_OCR_PIXELS = 40_000_000
+"""Tope de píxeles por página que llega al OCR. A4 a 300 dpi son 8,7 Mpx; un plano A0 a
+300 dpi serían 139 Mpx. Si se supera, se baja la resolución y se informa el dpi efectivo."""
 
 logger = logging.getLogger(__name__)
 
@@ -174,18 +192,31 @@ def _pdf_pages(path: Path, *, ocr: OCREngine, settings: IngestSettings) -> list[
                 else:
                     # Se rasteriza la página completa: si tiene un sello con capa de texto,
                     # el OCR lo lee junto con la imagen.
-                    image = render_page_gray(doc, index, settings.ocr_dpi)
-                    pages.append(_ocr_page(number, image, native, ocr=ocr, dpi=settings.ocr_dpi))
+                    dpi = _capped_pdf_dpi(*page_size_points(doc, index), settings.ocr_dpi)
+                    image = render_page_gray(doc, index, dpi)
+                    pages.append(_ocr_page(number, image, native, ocr=ocr, dpi=dpi))
     except PdfReadError as exc:
         raise _DocumentError("unreadable_file", str(exc)) from exc
     return pages
 
 
+def _capped_pdf_dpi(width_pt: float, height_pt: float, wanted_dpi: int) -> int:
+    """El mayor dpi <= `wanted_dpi` con el que la página no supera `MAX_OCR_PIXELS`."""
+    dpi = wanted_dpi
+    # +1 por lado: pymupdf redondea el rectángulo de la página hacia afuera.
+    while dpi > 1 and (width_pt / 72 * dpi + 1) * (height_pt / 72 * dpi + 1) > MAX_OCR_PIXELS:
+        dpi -= 1
+    return dpi
+
+
 def _image_dpi(image: Image.Image) -> float | None:
+    """dpi declarado por la imagen, si es plausible. Los TIFF lo dan como `IFDRational`."""
     value = image.info.get("dpi")
-    if isinstance(value, tuple) and value and isinstance(value[0], int | float) and value[0] > 1:
-        return float(value[0])
-    return None
+    if not isinstance(value, tuple) or not value or not isinstance(value[0], numbers.Real):
+        return None
+    dpi = float(value[0])
+    # Se compara redondeado: PNG guarda píxeles por metro y 100 dpi vuelve como 99,9998.
+    return dpi if MIN_TRUSTED_DPI <= round(dpi) <= MAX_TRUSTED_DPI else None
 
 
 def _frames(image: Image.Image) -> Iterator[Image.Image]:
@@ -202,14 +233,18 @@ def _image_pages(path: Path, *, ocr: OCREngine, settings: IngestSettings) -> lis
     except (UnidentifiedImageError, OSError) as exc:
         raise _DocumentError("unreadable_file", str(exc)) from exc
     pages: list[Page] = []
+    # Mismo criterio que con los PDF: el OCR recibe la página a `ocr_dpi`. Si la imagen no
+    # declara una resolución plausible, se asume que ya está a `ocr_dpi`.
+    base_dpi = source_dpi if source_dpi is not None else float(settings.ocr_dpi)
     for number, frame in enumerate(frames, start=1):
-        # Mismo criterio que con los PDF: el OCR recibe la página a `ocr_dpi`. Si la imagen no
-        # declara su resolución, se asume que ya está a `ocr_dpi`.
-        if source_dpi is not None and round(source_dpi) != settings.ocr_dpi:
-            scale = settings.ocr_dpi / source_dpi
-            size = (round(frame.width * scale), round(frame.height * scale))
+        scale = settings.ocr_dpi / base_dpi
+        if frame.width * frame.height * scale**2 > MAX_OCR_PIXELS:
+            scale = math.sqrt(MAX_OCR_PIXELS / (frame.width * frame.height))
+        size = (max(1, math.floor(frame.width * scale)), max(1, math.floor(frame.height * scale)))
+        if size != frame.size:
             frame = frame.resize(size, resample=Image.Resampling.BICUBIC)
-        pages.append(_ocr_page(number, frame, "", ocr=ocr, dpi=settings.ocr_dpi))
+        effective_dpi = round(base_dpi * scale)
+        pages.append(_ocr_page(number, frame, "", ocr=ocr, dpi=effective_dpi))
     return pages
 
 
