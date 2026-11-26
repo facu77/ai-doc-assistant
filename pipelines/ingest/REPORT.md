@@ -1,32 +1,49 @@
-# Reporte de ingesta del corpus
+# Reporte de ingesta
 
-Corrida registrada de `add-ingest-pipeline` sobre el corpus ficticio versionado (`data/corpus`).
+Corridas registradas de `add-ingest-pipeline`. Cada número de este archivo sale de un `ingest_report.json` versionado en [`evals/runs/ingest/`](../../evals/runs/ingest/). El nombre de cada archivo indica el conjunto, el commit del código y el psm.
 
-- **Código**: commit `da01914` (pipeline versión 1).
-- **Corpus**: semilla 20261124, generador versión 1 (`uv run make-corpus --out ../../data/corpus`).
-- **Entorno**: contenedor Linux x86_64 con 4 vCPU, Python 3.12.3, Tesseract 5.3.4 (`spa+eng`).
-- **Comando**: `uv run ingest ../../data/corpus --out <dir>` (desde `pipelines/ingest`, configuración por defecto: 50 caracteres, ratio 0,9, 300 dpi, psm 3).
-- **Fecha**: 2026-11-24.
+- **Entorno**: contenedor Linux x86_64 con 4 vCPU, Python 3.12.3, Tesseract 5.3.4 (`spa+eng`), 300 dpi, umbrales de detección 50 caracteres y 0,9.
+- **Conjuntos**:
+  - Validación (desarrollo): `data/corpus-validation/`, 6 escaneos, semilla 20261126.
+  - Prueba: `data/corpus/`, 20 documentos, semilla 20261124.
+- **Procedimiento** (decisión 5 de la propuesta): la regla de selección del psm se commiteó en `design.md` (commit `7768799`) antes de generar el set de validación. Después se midió la validación, se eligió el psm y recién entonces se corrió una sola vez el corpus de prueba.
 
-Lo que sigue es el `ingest_report.md` que escribió esa corrida, sin editar (solo se bajó un nivel cada título).
+## 1. Selección del psm sobre el set de validación
 
-## Corrida con la configuración por defecto (psm 3)
+Archivos: `validation_37a4454_psm3.json`, `validation_37a4454_psm4.json` y `validation_37a4454_psm6.json`. Regla: `uv run python scripts/choose_psm.py --psm3 ... --psm4 ... --psm6 ...`.
+
+| Documento | Tipo | Escaneo | psm 3 | psm 4 | psm 6 |
+| --- | --- | --- | --- | --- | --- |
+| `v01-boletin-interno.pdf` | dos columnas | limpio | 0.13 % | 60.92 % | 60.78 % |
+| `v02-planilla-horas-extra.pdf` | tabla | limpio | 0.63 % | 0.63 % | 0.63 % |
+| `v03-memo-feriados.pdf` | texto corrido | limpio | 0.00 % | 0.00 % | 0.00 % |
+| `v04-solicitud-reintegro-guarderia.jpg` | tabla | ruidoso | 0.00 % | 0.00 % | 0.00 % |
+| `v05-guia-rapida-beneficios.pdf` | dos columnas | ruidoso | 0.00 % | 5.50 % | 49.00 % |
+| `v06-aviso-mantenimiento-edificio.pdf` | texto corrido | ruidoso | 0.00 % | 0.00 % | 0.00 % |
+| **CER medio por página escaneada** | | | **0.13 %** | **11.17 %** | **18.40 %** |
+
+**psm elegido: 3.** psm 4 y 6 suponen una sola columna, así que en los documentos a dos columnas leen cada renglón de izquierda a derecha y mezclan las dos columnas. En el boletín, el CER pasa de 0.13 % a 60.92 %. Las dos tablas del set de validación las lee bien psm 3 (0.63 % y 0.00 %). Como el valor por defecto sigue siendo psm 3, la salida no cambia y `PIPELINE_VERSION` queda en 2.
+
+## 2. Corpus de prueba con el psm elegido (corrida única)
+
+Archivo: `corpus_76145f8_psm3.json`. Lo que sigue es el `ingest_report.md` de esa corrida, renderizado con `ingest.report.render_markdown` sin editar (solo se bajó un nivel cada título).
 
 ### Resumen
 
 | Campo | Valor |
 | --- | --- |
-| Versión del pipeline | 1 |
+| Versión del pipeline | 2 |
 | Motor de OCR | tesseract 5.3.4 (spa+eng, psm 3) |
+| Huella de configuración | `2e4681eb1fd4` |
 | Documentos | 20 |
 | Procesados | 20 |
 | Omitidos (sin cambios) | 0 |
 | Con error | 0 |
 | Páginas | 35 |
 | CER medio (documentos con referencia) | 1.22 % |
-| Tiempo total | 29.65 s |
+| Tiempo total | 76.46 s |
 | Páginas procesadas en esta corrida | 35 |
-| Tiempo por página procesada | 0.847 s |
+| Tiempo por página procesada | 2.185 s |
 
 ### Páginas por método
 
@@ -58,52 +75,53 @@ Método por página: `N` nativa, `O` OCR.
 | 06-onboarding.pdf | Nativo | processed | 2 | N N | 0.00 % | 0.00 s |
 | 07-capacitacion.pdf | Nativo | processed | 1 | N | 0.00 % | 0.00 s |
 | 08-seguridad-informacion.pdf | Nativo | processed | 2 | N N | 0.00 % | 0.00 s |
-| 09-formulario-solicitud-vacaciones.pdf | Escaneo limpio | processed | 1 | O | 0.22 % | 1.97 s |
-| 10-memo-aguinaldo.pdf | Escaneo limpio | processed | 1 | O | 0.19 % | 2.23 s |
-| 11-circular-horario-verano.pdf | Escaneo limpio | processed | 1 | O | 0.00 % | 2.10 s |
-| 12-reglamento-comedor.pdf | Escaneo limpio | processed | 2 | O O | 0.00 % | 3.66 s |
-| 13-formulario-rendicion-gastos.jpg | Escaneo limpio | processed | 1 | O | 23.81 % | 2.08 s |
-| 14-procedimiento-licencia-medica.pdf | Escaneo limpio | processed | 2 | O O | 0.00 % | 4.30 s |
-| 15-acta-comite-seguridad-higiene.pdf | Escaneo ruidoso | processed | 1 | O | 0.00 % | 2.10 s |
-| 16-formulario-alta-beneficiario.pdf | Escaneo ruidoso | processed | 1 | O | 0.00 % | 1.95 s |
-| 17-aviso-cambio-turnos.jpg | Escaneo ruidoso | processed | 1 | O | 0.00 % | 1.65 s |
-| 18-politica-prestamos-personales.pdf | Escaneo ruidoso | processed | 2 | O O | 0.18 % | 3.65 s |
-| 19-manual-evaluacion-desempeno.pdf | Mixto | processed | 3 | N O N | 0.00 % | 1.99 s |
-| 20-constancia-capacitacion.pdf | Mixto | processed | 2 | N O | 0.00 % | 1.92 s |
+| 09-formulario-solicitud-vacaciones.pdf | Escaneo limpio | processed | 1 | O | 0.22 % | 4.65 s |
+| 10-memo-aguinaldo.pdf | Escaneo limpio | processed | 1 | O | 0.19 % | 10.18 s |
+| 11-circular-horario-verano.pdf | Escaneo limpio | processed | 1 | O | 0.00 % | 4.15 s |
+| 12-reglamento-comedor.pdf | Escaneo limpio | processed | 2 | O O | 0.00 % | 13.14 s |
+| 13-formulario-rendicion-gastos.jpg | Escaneo limpio | processed | 1 | O | 23.81 % | 2.40 s |
+| 14-procedimiento-licencia-medica.pdf | Escaneo limpio | processed | 2 | O O | 0.00 % | 4.67 s |
+| 15-acta-comite-seguridad-higiene.pdf | Escaneo ruidoso | processed | 1 | O | 0.00 % | 5.00 s |
+| 16-formulario-alta-beneficiario.pdf | Escaneo ruidoso | processed | 1 | O | 0.00 % | 2.12 s |
+| 17-aviso-cambio-turnos.jpg | Escaneo ruidoso | processed | 1 | O | 0.00 % | 8.72 s |
+| 18-politica-prestamos-personales.pdf | Escaneo ruidoso | processed | 2 | O O | 0.18 % | 10.34 s |
+| 19-manual-evaluacion-desempeno.pdf | Mixto | processed | 3 | N O N | 0.00 % | 8.94 s |
+| 20-constancia-capacitacion.pdf | Mixto | processed | 2 | N O | 0.00 % | 2.14 s |
 
 ### Errores
 
 Sin errores.
 
-## Reingesta (idempotencia)
+## 3. Reingesta y tiempos
 
-Mismo comando, mismo directorio de salida, sin cambios en el corpus: 20 documentos omitidos, 0 procesados, 0 páginas procesadas, 0.03 s en total. Los `doc_id` y los JSONL no cambian.
+- **Reingesta** (`corpus_76145f8_psm3_reingesta.json`): mismo directorio de salida y misma configuración. Resultado: 20 documentos omitidos, 0 procesados, 0.02 s.
+- **Tiempos**: la corrida registrada tardó 76.5 s porque la máquina estaba cargada. Una segunda corrida, hecha solo para medir el tiempo, tardó 33.3 s (0.95 s por página) (`corpus_76145f8_psm3_tiempos.json`). El CER es idéntico, porque el pipeline es determinista. Casi todo el tiempo se va en las 15 páginas con OCR.
 
-## Umbrales de la spec
+## 4. Umbrales de la spec
 
 | Categoría | CER medio | Umbral (fijado antes de medir) | Resultado |
 | --- | --- | --- | --- |
 | Escaneo limpio | 4.04 % | 2 % | **No cumple** |
 | Escaneo ruidoso | 0.04 % | 8 % | Cumple |
 
-El test `test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento` (`uv run pytest -m integration`) queda en rojo a propósito: el umbral no se mueve.
+`uv run pytest -m integration` da 1 test fallado (`test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento`) y 3 que pasan. El umbral no se movió.
 
-## Hallazgo: el error de los escaneos limpios es de orden de lectura, no de reconocimiento
+## 5. Hallazgos
 
-El 4,04 % sale casi entero de un documento: `13-formulario-rendicion-gastos.jpg` (CER 23,81 %). Los otros 5 escaneos limpios suman 2 sustituciones en total. En el documento 13, Tesseract reconoce bien todos los caracteres, pero el modo de segmentación automática (psm 3) separa la tabla de dos columnas en dos bloques: lee la columna "Concepto" completa, sigue con el texto de abajo y deja la columna "Importe" al final. El CER cuenta ese texto desplazado como borrados más inserciones.
+- **El error de los escaneos limpios es de orden de lectura.** Casi todo viene de `13-formulario-rendicion-gastos.jpg` (23.81 %). psm 3 lee la columna "Concepto" de la tabla, sigue con el resto de la página y deja la columna "Importe" al final. Los caracteres se reconocen bien. Los otros 5 escaneos limpios suman 2 sustituciones ("Antigüedad" leída como "Antigúedad").
+- **psm 4 y 6 lo arreglarían en este corpus, pero no en general.** Con el código anterior (`corpus_da01914_psm4.json` y `corpus_da01914_psm6.json`), el escaneo limpio daba 0.07 % y 0.07 %, contra 4.04 % con psm 3 (`corpus_da01914_psm3.json`). Esas corridas se reprodujeron el 2026-11-26 desde `git archive da01914`. Pero en el set de validación, los dos modos rompen los documentos a dos columnas. Elegirlos mirando el corpus de prueba habría sido sobreajustar a un corpus que no tiene ninguna página a dos columnas.
+- **El perfil ruidoso es fácil para Tesseract** (0.04 %). Se mantiene en esta change (decisión 6).
 
-Los errores de reconocimiento que sí aparecen en todo el corpus son una sola confusión, repetida en 3 documentos (dos limpios y uno ruidoso): "Antigüedad" leída como "Antigúedad". En `09-formulario-solicitud-vacaciones.pdf` es 1 sustitución sobre 462 caracteres, o sea CER 0,22 %.
+## 6. Corridas registradas
 
-Binarizar o enderezar la imagen no cambiaría nada, porque los caracteres ya se reconocen bien. Lo que cambia el resultado es el modo de segmentación de página de Tesseract. Experimento (una variable por vez, mismo commit y mismo corpus, `--psm N`):
-
-| Configuración | CER medio limpio | CER medio ruidoso | CER del doc. 13 | Tiempo total |
+| Archivo | Conjunto | Código | psm | Para qué |
 | --- | --- | --- | --- | --- |
-| psm 3 (por defecto) | 4.04 % | 0.04 % | 23.81 % | 29.6 s |
-| psm 4 | 0.07 % | 0.04 % | 0.00 % | 28.7 s |
-| psm 6 | 0.07 % | 0.04 % | 0.00 % | 27.4 s |
-
-psm 4 ("una columna de texto de tamaños variables") y psm 6 ("un bloque uniforme de texto") leen la tabla fila por fila. **No se adoptaron como valor por defecto**: se eligieron mirando este mismo corpus, que tiene una sola columna en todas las páginas. Además, según la documentación de Tesseract, los dos modos suponen una sola columna, así que en un documento a dos columnas mezclarían las líneas de ambas (eso no se midió). La decisión queda abierta en `openspec/changes/add-ingest-pipeline/proposal.md` (Preguntas abiertas).
-
-## Hallazgo: el perfil ruidoso resultó fácil para Tesseract
-
-El perfil ruidoso (rotación de 1 a 2°, ruido gaussiano sigma 35, JPEG calidad 60, 300 a 200 dpi) da un CER medio de 0,04 %, casi igual al limpio. El ruido gaussiano por píxel se promedia al bajar la resolución y el texto mantiene mucho contraste, así que el escenario pasa sin discriminar. Los parámetros se fijaron antes de medir y no se tocaron. Los escaneos reales (desenfoque, bajo contraste, manchas, papel con textura, 150 dpi o menos) son más difíciles: es una limitación del corpus sintético.
+| `validation_37a4454_psm3.json` | validación | `37a4454` | 3 | Regla de selección |
+| `validation_37a4454_psm4.json` | validación | `37a4454` | 4 | Regla de selección |
+| `validation_37a4454_psm6.json` | validación | `37a4454` | 6 | Regla de selección |
+| `corpus_76145f8_psm3.json` | prueba | `76145f8` | 3 | Resultado reportado |
+| `corpus_76145f8_psm3_reingesta.json` | prueba | `76145f8` | 3 | Idempotencia |
+| `corpus_76145f8_psm3_tiempos.json` | prueba | `76145f8` | 3 | Tiempo sin carga de la máquina |
+| `corpus_da01914_psm3.json` | prueba | `da01914` | 3 | Ronda 1 (reproducida) |
+| `corpus_da01914_psm4.json` | prueba | `da01914` | 4 | Experimento de la ronda 1 (reproducido) |
+| `corpus_da01914_psm6.json` | prueba | `da01914` | 6 | Experimento de la ronda 1 (reproducido) |

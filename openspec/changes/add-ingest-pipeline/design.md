@@ -37,6 +37,7 @@ Se escribe y se commitea antes de generar el set de validación y antes de medir
 - **Herramienta**: `pipelines/ingest/scripts/choose_psm.py` aplica la regla sobre los `ingest_report.json` de las tres corridas.
 - **Registro**: los reportes de todas las corridas se versionan en `evals/runs/ingest/`.
 - **Consecuencia**: si el psm elegido no es 3, se cambia el valor por defecto y se sube `PIPELINE_VERSION`.
+- **Resultado** (agregado después de medir, sin cambiar la regla): el CER medio por página escaneada dio 0,13 % con psm 3, 11,17 % con psm 4 y 18,40 % con psm 6, así que se eligió psm 3. El valor por defecto no cambia. Las corridas están en `evals/runs/ingest/validation_37a4454_psm*.json` y el detalle, en `pipelines/ingest/REPORT.md`.
 
 ## Risks / Trade-offs
 

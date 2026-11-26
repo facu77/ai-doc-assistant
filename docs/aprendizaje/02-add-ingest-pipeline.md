@@ -1,6 +1,6 @@
 # 02 · add-ingest-pipeline: de PDFs y escaneos a texto medido
 
-Qué se construyó en esta change y qué conceptos hay detrás. El RAG solo puede ser tan bueno como el texto que recibe, y esta change produce ese texto: un JSONL por documento, con el texto por página, el método de extracción y una medida de calidad (el CER). Todo lo que sigue apunta a código real del repo y a números de la corrida registrada en `pipelines/ingest/REPORT.md`.
+Qué se construyó en esta change y qué conceptos hay detrás. El RAG solo puede ser tan bueno como el texto que recibe, y esta change produce ese texto: un JSONL por documento, con el texto por página, el método de extracción y una medida de calidad (el CER). Todo lo que sigue apunta a código real del repo y a números de corridas versionadas en `evals/runs/ingest/` (resumidas en `pipelines/ingest/REPORT.md`). La nota cubre las dos rondas: la implementación y las correcciones posteriores a la revisión.
 
 ## 1. PDF nativo y PDF escaneado: la capa de texto
 
@@ -9,13 +9,13 @@ Qué se construyó en esta change y qué conceptos hay detrás. El RAG solo pued
 - **Nativo**: cada carácter está guardado como carácter, con su fuente y su posición. Esa información forma la *capa de texto*, y se lee sin OCR. Por ejemplo, `data/corpus/01-politica-licencias.pdf`.
 - **Escaneado**: la página es una foto. No hay caracteres, solo píxeles. Por ejemplo, `data/corpus/09-formulario-solicitud-vacaciones.pdf`.
 
-La capa de texto se lee con `page.get_text("text")`, en `src/ingest/pdf.py:48`.
+La capa de texto se lee con `page.get_text("text")`, en `src/ingest/pdf.py:59`.
 
 **El problema**: un mismo PDF puede mezclar los dos tipos. `19-manual-evaluacion-desempeno.pdf` tiene las páginas 1 y 3 nativas y la 2 escaneada. Por eso se decide **por página** y no por documento.
 
 **La regla** está en `src/ingest/detection.py:41`. Una página es nativa si tiene al menos 50 caracteres no blancos y al menos el 90 % de ellos son imprimibles. El ratio sirve para atrapar capas de texto rotas. Un caso típico son las fuentes sin tabla `ToUnicode`, que se extraen como `U+FFFD` (el carácter de reemplazo). Esa página "tiene texto", pero el texto es basura.
 
-**El caso borde del sello**: la página 2 de `20-constancia-capacitacion.pdf` es una imagen con un sello que tiene capa de texto: "RECIBIDO RRHH 02/11/2026", 24 caracteres. Como no llega a 50, la página va a OCR. Además se rasteriza la página **completa** (`src/ingest/pipeline.py:142`), así que el OCR lee la imagen y el sello juntos.
+**El caso borde del sello**: la página 2 de `20-constancia-capacitacion.pdf` es una imagen con un sello que tiene capa de texto: "RECIBIDO RRHH 02/11/2026". Son 24 caracteres con los espacios, pero la regla cuenta los **no blancos**, que son 22. Como no llega a 50, la página va a OCR. Además se rasteriza la página **completa** (`src/ingest/pipeline.py:196`), así que el OCR lee la imagen y el sello juntos.
 
 El test `test_los_umbrales_de_deteccion_son_configurables` muestra qué pasa con un umbral demasiado bajo (10): la página se toma como nativa y su texto queda reducido al sello. Todo el contenido de la imagen se pierde **sin ningún error**.
 
@@ -41,7 +41,15 @@ Por eso conviene que el umbral sea conservador.
 
 ¿Por qué 300 dpi? Con 300 dpi, el cuerpo de una letra de 11 puntos ocupa unos 46 píxeles (11/72 × 300) y una minúscula de Helvetica mide unos 24 de alto. La documentación de Tesseract recomienda al menos 300 dpi, porque con letras de pocos píxeles los trazos se empastan y la precisión cae. Con mucha más resolución, el OCR tarda más sin ganar precisión.
 
-El rasterizado está en `src/ingest/pdf.py:57` (`get_pixmap(dpi=..., colorspace=GRAY)`). Las imágenes sueltas que declaran otra resolución en sus metadatos (por ejemplo, los `.jpg` del corpus vienen a 200 dpi) se reescalan a 300 dpi (`src/ingest/pipeline.py:174`). Así todas las páginas llegan al OCR con el mismo criterio.
+El rasterizado está en `src/ingest/pdf.py:72` (`get_pixmap(dpi=..., colorspace=GRAY)`). Las imágenes sueltas que declaran otra resolución en sus metadatos (por ejemplo, los `.jpg` del corpus vienen a 200 dpi) se reescalan a 300 dpi (`src/ingest/pipeline.py:240`). Así todas las páginas llegan al OCR con el mismo criterio.
+
+**No le creas siempre al metadato.** En la revisión aparecieron tres problemas (`_image_dpi`, `src/ingest/pipeline.py:212`):
+
+- **Valores implausibles**: muchas aplicaciones guardan 72 dpi por defecto, aunque la imagen se haya escaneado a 300. Si le creés, reescalás la imagen ×4 sin motivo. Por eso el dpi declarado solo se usa si está entre 100 y 600.
+- **El tipo**: los TIFF dan el dpi como `IFDRational`, que no es `float` pero sí `numbers.Real`.
+- **El redondeo**: un PNG guarda píxeles por metro, así que 100 dpi vuelve como 99,9998, y por eso la comparación se hace sobre el valor redondeado.
+
+Además hay un tope de píxeles por página, `MAX_OCR_PIXELS` (`src/ingest/pipeline.py:74`). Un plano A0 a 300 dpi tendría 139 Mpx. Si una página supera el tope, se baja la resolución y se le informa al motor el dpi efectivo.
 
 > **Pregunta**: si escaneás un formulario a 72 dpi y lo reescalás a 300, ¿recuperás calidad? ¿Por qué el pipeline igual reescala?
 
@@ -99,47 +107,59 @@ El numerador es la distancia de Levenshtein a nivel de caracteres: la mínima ca
 
 **Reproducibilidad**: la misma semilla tiene que dar los mismos bytes. Para eso hacen falta dos cosas:
 
-- **Un generador aleatorio por documento**: `np.random.default_rng([seed, index])` (`generate.py:204`). Si cambiás un documento, no se altera el ruido de los demás.
-- **`Canvas(..., invariant=1)`** de reportlab (`generate.py:129`): saca la fecha de creación y el identificador aleatorio que reportlab mete en cada PDF. Sin esto, dos corridas darían archivos distintos aunque el contenido sea idéntico.
+- **Un generador aleatorio por documento**: `np.random.default_rng([seed, index])` (`generate.py:240`). Si cambiás un documento, no se altera el ruido de los demás.
+- **`Canvas(..., invariant=1)`** de reportlab (`generate.py:160`): saca la fecha de creación y el identificador aleatorio que reportlab mete en cada PDF. Sin esto, dos corridas darían archivos distintos aunque el contenido sea idéntico.
 
-El test `test_generacion_con_la_misma_semilla_es_reproducible` genera el corpus dos veces y compara los bytes.
+El test `test_generacion_con_la_misma_semilla_es_reproducible` regenera el corpus y lo compara contra el **manifiesto commiteado**, con el sha256 de cada archivo. En la primera ronda comparaba dos corridas entre sí, y la revisión marcó el problema: si alguien cambia el nivel de ruido, las dos corridas nuevas siguen siendo iguales entre sí, pero ya no son el corpus contra el que se midió. Anclar al manifiesto detecta ese cambio.
 
 **Límite**: lo sintético es más fácil que lo real. El perfil ruidoso (ruido gaussiano sigma 35, rotación de 1 a 2°) dio CER 0,04 %. El ruido por píxel se promedia al bajar de 300 a 200 dpi, y la tinta sigue teniendo mucho contraste. Un escaneo real trae desenfoque, sombras y manchas que este corpus no simula.
 
 > **Pregunta**: si el corpus sintético da CER cercano a 0, ¿qué podés afirmar sobre el OCR con documentos reales? ¿Y qué no?
 
-## 6. Umbrales fijados antes de medir
+## 6. Umbrales fijados antes de medir y separación entre desarrollo y prueba
 
-**Qué es**: fijar el criterio de éxito **antes** de ver los resultados (2 % para escaneo limpio y 8 % para ruidoso, decididos en la propuesta). En ciencia se llama *pre-registro*. Si fijás el umbral después de mirar el número, siempre "pasás", y la métrica deja de informar.
+**Pre-registro**: es fijar el criterio de éxito **antes** de ver los resultados (2 % para escaneo limpio y 8 % para ruidoso, decididos en la propuesta). Si fijás el umbral después de mirar el número, siempre "pasás", y la métrica deja de informar. Acá también se fijaron antes los perfiles de ruido: el commit `9f4273b` con el corpus es anterior a la primera corrida de OCR.
 
-Acá también se fijaron **antes** los perfiles de ruido: el commit `9f4273b` con el corpus es anterior a la primera corrida de OCR.
+**Qué pasó en la ronda 1**: el escaneo limpio dio 4,04 % contra un umbral de 2 %, por el orden de lectura de una tabla (doc. 13). Con `--psm 4` o `--psm 6` bajaba a 0,07 % **en ese corpus**. Elegir psm 4 por eso habría sido ajustar el sistema mirando el set que lo evalúa. Es la misma razón por la que `evals/golden/` es de solo lectura (CLAUDE.md, regla 4).
 
-**Qué pasó**: el escaneo limpio dio 4,04 %, por encima del 2 %. No se movió el umbral ni se tocó el corpus. Lo que sí se hizo:
+**Separación entre desarrollo y prueba** (ronda 2, decisión 5). Hay dos conjuntos con roles distintos:
 
-1. **Diagnosticar**: el error venía del orden de lectura en el documento 13, no del reconocimiento.
-2. **Experimentar con una sola variable**: con `--psm 4` o `--psm 6`, el CER limpio baja a 0,07 %.
-3. **No adoptar el resultado**: elegir psm 4 *porque anda en este corpus* es ajustar el sistema mirando el set de evaluación. Es la misma razón por la que `evals/golden/` es de solo lectura (CLAUDE.md, regla 4).
+- **Validación (desarrollo)**: `data/corpus-validation/`, 6 escaneos nuevos, con otra semilla. Sirve para decidir.
+- **Prueba**: `data/corpus/`. Sirve para reportar, y se usa una sola vez.
 
-La recomendación quedó en las Preguntas abiertas: validar psm 4 con documentos nuevos (un conjunto de retención, o *holdout*: datos que no se usan para decidir) antes de cambiar el valor por defecto.
+El orden quedó registrado en la historia de git:
 
-> **Pregunta**: si probás 10 configuraciones de Tesseract sobre el mismo corpus y te quedás con la mejor, ¿qué tan confiable es su CER como estimación para documentos nuevos?
+1. Commit `7768799`: la regla de decisión, escrita en `design.md` antes de que existiera el set de validación. Candidatos psm 3, 4 y 6. Gana el de menor CER medio por página escaneada, y un empate con psm 3 (menos de 0,1 pp) se resuelve a favor de psm 3. Está implementada en `src/ingest/psm_selection.py:37` (`choose_psm`), con tests de la regla antes del código.
+2. Commit `37a4454`: el set de validación. Lleva 2 documentos a dos columnas, 2 formularios con tabla y 2 textos corridos, una composición fijada sin haber medido.
+3. Commit `76145f8`: la medición sobre la validación. Resultado: psm 3 0,13 %, psm 4 11,17 % y psm 6 18,40 %, así que se eligió psm 3.
+4. Commit `ffe6d79`: la única corrida del corpus de prueba con psm 3. El escaneo limpio dio 4,04 %, el test sigue en rojo y no se ajustó nada más.
+
+**La lección**: en el set de prueba, psm 4 parecía la solución. En la validación, que tiene documentos a dos columnas, rompe la lectura: el boletín pasa de 0,13 % a 60,92 %. Sin la separación, habrías puesto en producción un modo que destruye todos los documentos a dos columnas, y con números que "lo probaban".
+
+¿Por qué escribir la regla antes? Porque si mirás los números primero, siempre aparece una regla razonable que favorece al ganador: "promedio por documento", "solo los limpios", "empate con 0,5 pp". La regla commiteada antes de medir le quita ese grado de libertad a quien decide.
+
+> **Pregunta**: si probás 10 configuraciones de Tesseract sobre el mismo corpus y te quedás con la mejor, ¿qué tan confiable es su CER como estimación para documentos nuevos? ¿Qué cambia si las probás sobre la validación y reportás la prueba?
 
 ## 7. Hash de contenido e idempotencia
 
-**Idempotente**: correr dos veces da el mismo resultado que correr una vez. Acá la segunda corrida omite los 20 documentos en 0,03 s, sin una sola llamada al OCR.
+**Idempotente**: correr dos veces da el mismo resultado que correr una vez. Acá la segunda corrida omite los 20 documentos en 0,02 s, sin una sola llamada al OCR (`evals/runs/ingest/corpus_76145f8_psm3_reingesta.json`).
 
-**`doc_id` = sha256 del archivo** (`src/ingest/pipeline.py:91`):
+**`doc_id` = sha256 del archivo** (`src/ingest/pipeline.py:144`):
 
 - El mismo contenido da el mismo id, aunque cambien el nombre o la carpeta.
 - Si cambia un solo byte, cambia el id.
 
 Si se usara el nombre del archivo, renombrarlo duplicaría el documento, y editar su contenido sin renombrarlo dejaría la salida vieja.
 
-El salteo está en `pipeline.py:81` y `pipeline.py:268`. Se omite un documento solo si existe su salida **y** tiene la misma `PIPELINE_VERSION` (`pipeline.py:40`). La versión existe para invalidar resultados cuando cambia la lógica: si mejorás la normalización y no la subís, los documentos viejos quedan con la normalización anterior.
+**La clave de idempotencia es el `doc_id` más la configuración.** En la ronda 1, el salteo miraba solo el `doc_id` y la `PIPELINE_VERSION`. Si reingestabas en el mismo directorio con otro psm, el pipeline omitía todo y te quedabas con la salida vieja, sin ningún aviso.
 
-**Escritura atómica** (`pipeline.py:78`): primero se escribe un `.tmp` y después se hace `os.replace`. Si el proceso se corta a la mitad, no queda un JSONL cortado que la próxima corrida tome por válido.
+Ahora la salida guarda `ocr_engine` y `config_hash` (`config_hash`, `src/ingest/pipeline.py:116`): el sha256 de un JSON canónico, con claves ordenadas, que tiene la versión del pipeline, los umbrales de detección, el dpi, los idiomas, el psm y el nombre del motor. Un documento se omite solo si coinciden el `doc_id` **y** el `config_hash` (`pipeline.py:134` y `pipeline.py:345`).
 
-**Límite conocido**: cambiar la configuración (umbrales, dpi, psm) no invalida el salteo (Pregunta abierta 4).
+El timeout **no** entra en la huella: cambiarlo no cambia el texto que sale. La regla general es que entra todo lo que cambia la salida, y nada más. Si metieras algo que no la cambia, cada ajuste irrelevante forzaría a reprocesar todo.
+
+`PIPELINE_VERSION` (`pipeline.py:51`) sigue existiendo para los cambios de lógica, que no son configuración. Pasó de 1 a 2 cuando cambió el esquema de la salida.
+
+**Escritura atómica** (`pipeline.py:113`): primero se escribe un `.tmp` y después se hace `os.replace`. Si el proceso se corta a la mitad, no queda un JSONL cortado que la próxima corrida tome por válido.
 
 > **Pregunta**: dos archivos con distinto nombre e idéntico contenido entran en el mismo lote. ¿Cuántos JSONL quedan y qué estado tiene cada uno en el reporte?
 
@@ -149,16 +169,41 @@ El salteo está en `pipeline.py:81` y `pipeline.py:268`. Se omite un documento s
 
 Esto habilita dos cosas:
 
-- **Tests sin Tesseract**: `FakeOCREngine` (`tests/fakes.py:24`) registra cada imagen que recibe, con su ancho, alto y dpi. Así, el test del PDF mixto verifica que hubo **exactamente una** llamada al OCR y que la página llegó a 300 dpi. Un `MagicMock` que devuelve un texto fijo no te dejaría ver *qué* páginas fueron al OCR, que es justo la lógica bajo prueba. `FailingOCREngine` (`tests/fakes.py:37`) simula un Tesseract caído.
+- **Tests sin Tesseract**: `FakeOCREngine` (`tests/fakes.py:24`) registra cada imagen que recibe, con su ancho, alto y dpi. Así, el test del PDF mixto verifica que hubo **exactamente una** llamada al OCR y que la página llegó a 300 dpi. `FailingOCREngine` (`tests/fakes.py:37`) simula un Tesseract caído.
 - **Comparar motores**: un OCR en la nube sería otra clase con los mismos dos miembros.
 
-La CI corre solo la suite rápida (`addopts = -m 'not integration'`, `pyproject.toml:73`). Los tests con Tesseract real llevan `@pytest.mark.integration` y se corren con `uv run pytest -m integration`.
+**Fakes fieles** (ronda 2, hallazgo 5). Un fake que ignora la imagen es ciego a una parte de la lógica. Para demostrarlo, se rompió el pipeline a propósito de tres maneras, una por vez (un *test de mutación*):
 
-> **Pregunta**: el fake devuelve un texto que no tiene nada que ver con la imagen. ¿Qué escenarios de la spec **no** puede probar entonces, y dónde se prueban?
+1. Rasterizar la página siguiente en lugar de la correcta.
+2. Mandar al OCR una imagen en blanco.
+3. No normalizar el texto que devuelve el OCR.
+
+**Ninguno** de los tests rápidos de la ronda 1 falló. Por eso se agregaron dos fakes nuevos:
+
+- `PixelMeanOCREngine` (`tests/fakes.py:61`) "lee" el brillo medio de la imagen que recibe. El test arma un PDF con dos páginas escaneadas de brillos distintos (una mitad negra y otra gris oscuro) y verifica que cada página llegue con su propia media. Atrapa las mutaciones 1 y 2.
+- `DirtyTextOCREngine` (`tests/fakes.py:49`) devuelve `"  Página\t uno \n\n\n\x0c"`, con el salto de página `\x0c` que Tesseract agrega al final, y el test exige `"Página uno"`. Atrapa la mutación 3.
+
+**Un fake con comportamiento no alcanza**: también tiene que **depender de la entrada** que querés verificar.
+
+La CI corre solo la suite rápida (`addopts = -m 'not integration'`, `pyproject.toml:74`). Los tests con Tesseract real llevan `@pytest.mark.integration` y se corren con `uv run pytest -m integration`. El adaptador de Tesseract también tiene tests sin el binario: reemplazan `pytesseract.image_to_string` con `monkeypatch` para simular un timeout, un `TesseractError` y un Tesseract no instalado.
+
+> **Pregunta**: `FakeOCREngine` devuelve un texto que no tiene nada que ver con la imagen. ¿Qué escenarios de la spec **no** puede probar entonces, y dónde se prueban?
 
 ## 9. Aislar los errores en un lote
 
-Cada archivo se procesa en su propio bloque `try`. Un error se convierte en un `_DocumentError` con un código (`unsupported_format`, `unreadable_file` u `ocr_failed`) y queda en el reporte. Después, el lote sigue con el siguiente archivo (`src/ingest/pipeline.py:233`).
+Cada archivo se procesa en su propio bloque `try` (`src/ingest/pipeline.py:303`). Un error se convierte en un código y queda en el reporte. Después, el lote sigue con el siguiente archivo. Los códigos son:
+
+- `unsupported_format`: formato no soportado.
+- `unreadable_file`: el archivo no se puede leer.
+- `ocr_failed`: el OCR falló.
+- `invalid_ground_truth`: el texto de referencia está roto.
+
+**Qué atrapar** (ronda 2, hallazgo 3): en la ronda 1, solo se atrapaban los errores "esperados" (`PdfReadError` o una imagen no reconocida). Después aparecieron dos huecos:
+
+- Una bomba de descompresión (una imagen chica en disco que ocupa gigas en memoria): Pillow lanza `DecompressionBombError`, que **no** hereda de `OSError`.
+- Un `RuntimeError` de pymupdf dentro de una página.
+
+Cualquiera de los dos cortaba el lote entero. Ahora las familias de errores de las librerías (`_UNREADABLE_ERRORS`, `pipeline.py:83`) se reportan como `unreadable_file`. Un `except Exception` genérico se evitó a propósito: un `AttributeError` es un bug tuyo y tiene que verse, no esconderse como "archivo ilegible".
 
 La alternativa, *fail-fast* (cortar en el primer error), es buena en un script interactivo. Pero en una ingesta de miles de documentos, un PDF corrupto no puede frenar todo.
 
@@ -178,7 +223,10 @@ El riesgo del aislamiento es **tragarse los errores**. Por eso hay dos salvaguar
 | `untyped_calls_exclude = ["pymupdf"]` y validación en `pdf.py` | pymupdf trae `py.typed`, pero `get_text` no tiene anotaciones. Se aísla en un módulo que chequea cada tipo | Un `# type: ignore` en cada llamada |
 | Un JSONL por documento, con una sola línea | Si concatenás los archivos, obtenés el JSONL del corpus. El nombre del archivo es el `doc_id` | Un JSONL por página: el registro de la spec es por documento |
 | La salida conserva los saltos de línea | `add-rag-core` los usa para detectar títulos al hacer chunking | Aplanar todo, como para el CER |
-| psm 3 se queda como valor por defecto | Cambiarlo sería decidir mirando el corpus de evaluación | psm 4 (pasa el umbral; pendiente de validar con un holdout) |
+| psm 3 como valor por defecto | Lo eligió la regla preregistrada sobre el set de validación (0,13 % contra 11,17 % y 18,40 %) | psm 4: pasaba el umbral en el set de prueba, pero rompe los documentos a dos columnas |
+| `config_hash` en la clave de idempotencia | Un cambio de configuración tiene que forzar el reprocesamiento | Solo `doc_id` + versión: deja salidas viejas sin avisar |
+| dpi declarado solo entre 100 y 600, con tope de 40 Mpx | 72 dpi es un valor por defecto, no un dato; un plano enorme no puede tumbar el proceso | Creer siempre en el metadato |
+| `_typed` valida en tiempo de ejecución todo lo que pymupdf entrega como `Any` | mypy no puede verificar lo que no tiene anotaciones. La validación encontró que `needs_pass` devuelve `int`, no `bool` | Confiar en los nombres de los atributos |
 | Perfiles de ruido fijados antes de medir | Para que el umbral de la spec signifique algo | Subir el ruido después de ver 0,04 % |
 
 ## Errores típicos
@@ -187,8 +235,11 @@ El riesgo del aislamiento es **tragarse los errores**. Por eso hay dos salvaguar
 - Un umbral de detección bajo: las páginas escaneadas con un sello se toman como nativas y su contenido se pierde **sin error**.
 - Medir el CER sin normalizar los blancos: terminás midiendo dónde corta cada línea.
 - Pasar los argumentos de `jiwer.cer` al revés (hipótesis primero): el denominador pasa a ser el largo de la hipótesis y el número cambia.
-- Ajustar la configuración del OCR mirando el mismo corpus que la evalúa.
-- Usar como `doc_id` el hash del nombre o de la ruta, o saltear sin guardar la versión del pipeline.
+- Ajustar la configuración del OCR mirando el mismo corpus que la evalúa, en lugar de separar validación y prueba y escribir la regla antes de medir.
+- Fakes que ignoran la entrada: pasan aunque el pipeline mande la página equivocada.
+- Creer el dpi de los metadatos sin acotarlo (72 dpi por defecto) y no poner tope de píxeles.
+- Atrapar solo `OSError` con Pillow: `DecompressionBombError` no hereda de ahí.
+- Usar como `doc_id` el hash del nombre o de la ruta, o saltear sin tener en cuenta la versión del pipeline y la configuración.
 - Escribir la salida directamente al archivo final (no atómico).
 - Un generador "con semilla" que no es reproducible: fechas dentro del PDF, o un generador aleatorio global compartido entre documentos.
 - Creer que una librería está tipada porque trae `py.typed`: pymupdf lo trae y `get_text` igual devuelve `Any`.
@@ -197,6 +248,6 @@ El riesgo del aislamiento es **tragarse los errores**. Por eso hay dos salvaguar
 
 1. **¿Cómo decidís si una página de un PDF necesita OCR?** Por página: cuántos caracteres extraíbles tiene la capa de texto (acá, 50 o más) y qué proporción son imprimibles (90 % o más, para detectar capas rotas). Si no cumple, se rasteriza la página completa y va a OCR. El umbral es conservador porque tomar como nativa una página escaneada pierde contenido en silencio.
 2. **¿Qué mide el CER y qué no?** Mide la distancia de edición a nivel de caracteres dividida por el largo de la referencia: sustituciones, borrados e inserciones. No distingue un carácter mal leído de un texto bien leído en otro orden. Una tabla leída columna por columna puede dar 24 % de CER con cero letras mal leídas.
-3. **¿Por qué el `doc_id` es un hash del contenido?** Porque es estable ante renombres y cambia ante cualquier edición. Junto con la versión del pipeline, permite saltear lo ya procesado (idempotencia) sin duplicar ni dejar salidas viejas.
+3. **¿Por qué el `doc_id` es un hash del contenido y qué más entra en la clave de idempotencia?** El hash es estable ante renombres y cambia ante cualquier edición. Pero la clave completa es el `doc_id` más una huella de la configuración que cambia la salida (versión, umbrales, dpi, idiomas, psm y motor). Si no, reingestar con otro psm devuelve resultados viejos sin avisar.
 4. **¿Cómo testeás un pipeline de OCR en CI sin instalar Tesseract?** Con el motor detrás de un `Protocol` y un fake que registra qué imágenes recibe, para verificar qué páginas van a OCR y a qué resolución. Los umbrales de calidad con el motor real van en tests `integration`, fuera de la suite rápida.
-5. **Tu métrica no llega al umbral acordado. ¿Qué hacés?** No mover el umbral ni el set de evaluación. Diagnosticar la causa (acá, el orden de lectura y no el reconocimiento), probar los cambios de a una variable y documentarlos. Antes de adoptar un cambio elegido mirando ese set, validarlo con datos nuevos.
+5. **Tu métrica no llega al umbral acordado. ¿Qué hacés?** No mover el umbral ni el set de prueba. Primero diagnosticar la causa (acá, el orden de lectura y no el reconocimiento). Después escribir la regla de decisión, elegir la configuración sobre un set de validación aparte y correr la prueba una sola vez. Si sigue sin llegar, se reporta tal cual. En esta change, psm 4 "arreglaba" la prueba, pero la validación mostró que rompe los documentos a dos columnas.
