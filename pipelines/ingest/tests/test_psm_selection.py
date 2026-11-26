@@ -53,6 +53,13 @@ def test_cer_medio_sin_paginas_escaneadas_es_un_error() -> None:
         pytest.param({3: 0.0105, 4: 0.0100, 6: 0.0200}, 3, id="empate-con-psm-3-se-queda-3"),
         pytest.param({3: 0.0300, 4: 0.0105, 6: 0.0100}, 4, id="empate-4-y-6-se-elige-4"),
         pytest.param({3: 0.0120, 4: 0.0100, 6: 0.0300}, 4, id="0.2-pp-no-es-empate"),
+        # Revisión, MEDIO 4: el desempate 4/6 aplica solo si LOS DOS le ganan a psm 3 por
+        # 0,1 pp o más. Acá psm 4 le gana por 0,05 pp: no hay desempate, gana el mejor (6).
+        pytest.param({3: 0.0300, 4: 0.0295, 6: 0.0289}, 6, id="4-no-supera-a-3-gana-6"),
+        # Revisión, BAJO: exactamente 0,1 pp NO es empate ("menor que 0,1 pp"). En float,
+        # 0.011 - 0.010 da 0.000999...; la comparación tiene que ser robusta a eso.
+        pytest.param({3: 0.011, 4: 0.010, 6: 0.050}, 4, id="borde-exacto-0.1-pp-no-es-empate"),
+        pytest.param({3: 0.050, 4: 0.011, 6: 0.010}, 6, id="borde-exacto-0.1-pp-entre-4-y-6"),
     ],
 )
 def test_regla_de_seleccion(means: dict[int, float], expected: int) -> None:
