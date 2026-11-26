@@ -53,6 +53,11 @@ class IngestedDocument(_Frozen):
     source: str = Field(description="Nombre del archivo, relativo al directorio de entrada.")
     source_format: SourceFormat
     pipeline_version: str
+    ocr_engine: str = Field(description="Motor de OCR configurado en la corrida que lo produjo.")
+    config_hash: str = Field(
+        pattern=SHA256_PATTERN,
+        description="sha256 de la configuración efectiva: clave de idempotencia junto al doc_id.",
+    )
     page_count: int = Field(ge=0)
     pages: list[Page]
 
@@ -88,6 +93,7 @@ class CategoryCER(_Frozen):
 class IngestReport(_Frozen):
     pipeline_version: str
     ocr_engine: str
+    config_hash: str = Field(pattern=SHA256_PATTERN)
     documents_total: int = Field(ge=0)
     processed: int = Field(ge=0)
     skipped: int = Field(ge=0)

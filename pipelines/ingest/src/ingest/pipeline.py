@@ -8,6 +8,7 @@ texto si sirve, OCR si no). Un error en un archivo se registra en el reporte y e
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 from collections.abc import Iterator
@@ -37,8 +38,11 @@ from ingest.quality import cer
 from ingest.report import build_report
 from ingest.settings import IngestSettings
 
-PIPELINE_VERSION = "1"
-"""Subirla cuando cambia la salida (extracción, normalización, OCR): invalida el salteo."""
+PIPELINE_VERSION = "2"
+"""Subirla cuando cambia la salida (extracción, normalización, OCR): invalida el salteo.
+
+Historia: 1 -> 2 agrega `ocr_engine` y `config_hash` a la salida.
+"""
 
 DOCUMENTS_SUBDIR = "documents"
 GROUND_TRUTH_SUBDIR = "ground_truth"
@@ -78,14 +82,32 @@ def _write_document(path: Path, doc: IngestedDocument) -> None:
     os.replace(tmp, path)
 
 
-def _existing_output(path: Path, pipeline_version: str) -> IngestedDocument | None:
+def config_hash(settings: IngestSettings, *, pipeline_version: str, ocr_engine: str) -> str:
+    """Huella de todo lo que cambia la salida: versión, detección, rasterizado y OCR.
+
+    `ocr_timeout_s` no entra: un timeout distinto no cambia el texto que sale.
+    """
+    effective = {
+        "pipeline_version": pipeline_version,
+        "ocr_engine": ocr_engine,
+        "min_native_chars": settings.min_native_chars,
+        "min_printable_ratio": settings.min_printable_ratio,
+        "ocr_dpi": settings.ocr_dpi,
+        "ocr_lang": settings.ocr_lang,
+        "ocr_psm": settings.ocr_psm,
+    }
+    canonical = json.dumps(effective, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _existing_output(path: Path, expected_config_hash: str) -> IngestedDocument | None:
     if not path.is_file():
         return None
     try:
         doc = load_document(path)
     except (ValidationError, ValueError, OSError):
-        return None  # salida ilegible: se reprocesa y se sobrescribe
-    return doc if doc.pipeline_version == pipeline_version else None
+        return None  # salida ilegible o de un esquema anterior: se reprocesa y se sobrescribe
+    return doc if doc.config_hash == expected_config_hash else None
 
 
 def sha256_file(path: Path) -> str:
@@ -238,6 +260,8 @@ def _ingest_file(
     settings: IngestSettings,
     gt_dir: Path | None,
     pipeline_version: str,
+    ocr_engine: str,
+    run_config_hash: str,
 ) -> _Outcome:
     start = perf_counter()
     source = path.name
@@ -263,7 +287,7 @@ def _ingest_file(
     doc_id = sha256_file(path)
     out_path = docs_dir / f"{doc_id}.jsonl"
     status: DocumentStatus
-    doc = _existing_output(out_path, pipeline_version)
+    doc = _existing_output(out_path, run_config_hash)
     if doc is not None:
         status, pages_processed = "skipped", 0
     else:
@@ -276,6 +300,8 @@ def _ingest_file(
             source=source,
             source_format=source_format,
             pipeline_version=pipeline_version,
+            ocr_engine=ocr_engine,
+            config_hash=run_config_hash,
             page_count=len(pages),
             pages=pages,
         )
@@ -306,6 +332,8 @@ def ingest_directory(
 ) -> IngestReport:
     """Ingesta los archivos de primer nivel de `in_dir` y escribe `out_dir/documents/*.jsonl`.
 
+    Un documento se omite si ya hay salida con su `doc_id` y la misma huella de configuración.
+
     Si no se indica `ground_truth_dir`, se usa `in_dir/ground_truth` cuando existe.
     """
     if not in_dir.is_dir():
@@ -316,6 +344,10 @@ def ingest_directory(
     docs_dir = out_dir / DOCUMENTS_SUBDIR
     docs_dir.mkdir(parents=True, exist_ok=True)
 
+    ocr_engine = ocr.name
+    run_config_hash = config_hash(
+        settings, pipeline_version=pipeline_version, ocr_engine=ocr_engine
+    )
     start = perf_counter()
     outcomes: list[_Outcome] = []
     for path in _input_files(in_dir):
@@ -326,6 +358,8 @@ def ingest_directory(
             settings=settings,
             gt_dir=ground_truth_dir,
             pipeline_version=pipeline_version,
+            ocr_engine=ocr_engine,
+            run_config_hash=run_config_hash,
         )
         entry = outcome.report
         logger.info(
@@ -343,7 +377,8 @@ def ingest_directory(
     return build_report(
         [outcome.report for outcome in outcomes],
         pipeline_version=pipeline_version,
-        ocr_engine=ocr.name,
+        ocr_engine=ocr_engine,
+        config_hash=run_config_hash,
         total_seconds=perf_counter() - start,
         pages_processed=sum(outcome.pages_processed for outcome in outcomes),
     )

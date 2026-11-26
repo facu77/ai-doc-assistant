@@ -25,7 +25,12 @@ def _report(pages: list[tuple[str, float | None]]) -> IngestReport:
         cer=0.0,
     )
     return build_report(
-        [doc], pipeline_version="t", ocr_engine="fake", total_seconds=1.0, pages_processed=1
+        [doc],
+        pipeline_version="t",
+        ocr_engine="fake",
+        config_hash="0" * 64,
+        total_seconds=1.0,
+        pages_processed=1,
     )
 
 

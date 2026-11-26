@@ -27,6 +27,7 @@ def build_report(
     *,
     pipeline_version: str,
     ocr_engine: str,
+    config_hash: str,
     total_seconds: float,
     pages_processed: int,
 ) -> IngestReport:
@@ -46,6 +47,7 @@ def build_report(
     return IngestReport(
         pipeline_version=pipeline_version,
         ocr_engine=ocr_engine,
+        config_hash=config_hash,
         documents_total=len(documents),
         processed=statuses["processed"],
         skipped=statuses["skipped"],
@@ -80,6 +82,7 @@ def render_markdown(report: IngestReport) -> str:
         "| --- | --- |",
         f"| Versión del pipeline | {report.pipeline_version} |",
         f"| Motor de OCR | {report.ocr_engine} |",
+        f"| Huella de configuración | `{report.config_hash[:12]}` |",
         f"| Documentos | {report.documents_total} |",
         f"| Procesados | {report.processed} |",
         f"| Omitidos (sin cambios) | {report.skipped} |",
