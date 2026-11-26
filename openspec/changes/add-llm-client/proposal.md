@@ -28,14 +28,26 @@ Todo el POC (RAG, agente y la evaluación con un LLM como juez) depende de model
 - Variables de entorno: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_RETRIES`, las claves de cada proveedor, `EMBEDDINGS_PROVIDER`, `EMBEDDINGS_MODEL` y `EMBEDDINGS_BATCH_SIZE`.
 - Hay que descargar el modelo de embeddings (unos cientos de MB) la primera vez. En CI y en Docker se cachea.
 
-## Decisiones tomadas (2026-11-24)
+## Decisiones tomadas (2026-11-24 y 2026-11-26)
 
 1. **Embeddings**: modelo local `intfloat/multilingual-e5-small` (384 dimensiones). Es gratis, no saca los documentos de la máquina y es determinista en CI sin claves. Queda detrás de `Embedder`, así que se puede comparar después contra una API.
 2. **LLM por defecto**: `claude-haiku-5-5`, tanto para generar como para juzgar en la evaluación. Usar el mismo modelo como juez introduce un sesgo de autopreferencia. Se mitiga en `add-rag-core` con una verificación humana sobre una muestra.
 3. **Embeddings separados del LLM**: interfaz `Embedder` propia.
 4. **Ollama**: queda fuera del POC y se documenta como extensión posible.
 5. **Salida estructurada**: entra en esta change porque el agente la necesita.
+6. **Esquemas cerrados para la salida estructurada (2026-11-26)**: un modelo Pydantic por herramienta y la llamada como unión discriminada por el nombre de la herramienta. Un esquema con objetos sin propiedades (un dict libre) se rechaza con `LLMSchemaError` antes de llamar al proveedor, en todos los proveedores.
+7. **Tope de `Retry-After` de 30 s (2026-11-26)**: si el proveedor pide más, no se espera y se levanta `LLMRateLimitError` con el `retry_after` original. Con un valor dentro del tope, se espera `Retry-After` más un jitter acotado.
+8. **`StructuredResponse[T]` (2026-11-26)**: `complete_structured` devuelve el objeto validado con el uso sumado de todos los intentos, la latencia, los intentos, el proveedor y el modelo. Al rendirse, loguea la llamada con resultado de error.
+9. **Tests de integración visibles (2026-11-26)**: `verify.sh` con `INTEGRATION=auto|1|0` y CI con `INTEGRATION=1`, Tesseract y la caché de Hugging Face.
+
+10. **Decisiones sobre lo que surgió al implementar (2026-11-26)**:
+    - `attempts` cuenta todos los pedidos al proveedor (con reintentos transitorios), en `StructuredResponse`, `LLMValidationError` y el log.
+    - Los esquemas cerrados también rechazan los campos `Any` y las uniones en la raíz.
+    - Los modelos e5 `-instruct` se rechazan con un error de configuración, en vez de embeberlos sin el prompt que necesitan.
+    - OpenAI `strict: true` queda afuera, porque depende de una función privada del SDK.
+    - Los errores de OpenAI a mitad de un stream se tratan como permanentes. Es una limitación conocida: OpenAI no es el proveedor por defecto.
+    - Se aceptan como están: reintentar los cortes de conexión, `system` y `max_tokens` como parámetros por llamada, `LLM_PROVIDER` y `EMBEDDINGS_PROVIDER` sin default, y `httpx2` en lugar de `httpx`.
 
 ## Preguntas abiertas
 
-Ninguna por ahora.
+Ninguna.

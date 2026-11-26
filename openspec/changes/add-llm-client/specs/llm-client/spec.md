@@ -21,6 +21,10 @@ El sistema SHALL elegir el proveedor y el modelo de LLM a partir de las variable
 - **WHEN** `LLM_PROVIDER=openai` y `OPENAI_API_KEY` no está definida
 - **THEN** el arranque falla con un error de configuración que nombra la variable faltante, sin mostrar otros valores de configuración
 
+#### Scenario: Proveedor sin modelo por defecto
+- **WHEN** `LLM_PROVIDER=openai`, con su clave, y `LLM_MODEL` no está definida
+- **THEN** el arranque falla con un error de configuración que nombra `LLM_MODEL`
+
 ### Requirement: Completado y streaming
 El cliente SHALL ofrecer una operación que devuelve la respuesta completa con su uso de tokens y su latencia, y una operación de streaming que entrega el texto de forma incremental.
 
@@ -51,6 +55,10 @@ El cliente SHALL reintentar solo los errores transitorios (timeout, límite de t
 - **WHEN** el proveedor responde 429 con `Retry-After: 2`
 - **THEN** el siguiente intento ocurre como mínimo 2 segundos después
 
+#### Scenario: Retry-After mayor que el tope
+- **WHEN** el proveedor responde 429 con un `Retry-After` mayor que 30 segundos
+- **THEN** la llamada falla enseguida, sin esperar, con un error de límite de tasa tipado que conserva el `Retry-After` recibido
+
 ### Requirement: Timeout por llamada
 Cada llamada al proveedor MUST tener un timeout explícito configurado por `LLM_TIMEOUT_SECONDS`.
 
@@ -73,12 +81,19 @@ El cliente SHALL registrar por cada llamada el proveedor, el modelo, los tokens,
 - **THEN** se emite un log estructurado con los campos de uso, y la cadena `secreto-de-prueba` no aparece en ningún log
 
 ### Requirement: Salida estructurada
-El cliente SHALL permitir pedir una respuesta que cumpla un esquema declarado y devolverla ya validada como un objeto tipado. Si después de los reintentos configurados la respuesta no cumple el esquema, el cliente MUST fallar con un error tipado de validación.
+El cliente SHALL permitir pedir una respuesta que cumpla un esquema declarado y devolverla ya validada como un objeto tipado, junto con el uso de tokens sumado de todos los intentos, la cantidad de intentos, la latencia, el proveedor y el modelo. Si después de los reintentos configurados la respuesta no cumple el esquema, el cliente MUST fallar con un error tipado de validación.
 
 #### Scenario: Respuesta válida
-- **WHEN** se pide una salida estructurada con un esquema `{herramienta: str, argumentos: objeto}` y el proveedor devuelve un JSON que lo cumple
-- **THEN** el consumidor recibe un objeto tipado con esos campos
+- **WHEN** se pide una salida estructurada con la unión discriminada `BuscarDocumentos(herramienta: "buscar_documentos", query: str, top_k: int)` | `ObtenerPagina(herramienta: "obtener_pagina", doc_id: str, pagina: int)` y el proveedor devuelve un JSON que cumple `ObtenerPagina`
+- **THEN** el consumidor recibe un objeto `ObtenerPagina` tipado con esos campos, junto con el uso de tokens, los intentos, la latencia, el proveedor y el modelo
 
 #### Scenario: Respuesta inválida
 - **WHEN** el proveedor devuelve un texto que no es JSON válido para el esquema en todos los intentos
-- **THEN** la llamada falla con un error de validación tipado, que incluye la cantidad de intentos y no incluye el contenido del prompt
+- **THEN** la llamada falla con un error de validación tipado, que incluye la cantidad de intentos y no incluye el contenido del prompt, y se registra la llamada con resultado de error
+
+### Requirement: Esquemas cerrados
+El cliente MUST aceptar solo esquemas cerrados: la raíz es un objeto y todo objeto declara sus propiedades. Los argumentos de cada herramienta se declaran con un modelo propio, y la llamada es una unión discriminada por el nombre de la herramienta.
+
+#### Scenario: Esquema con objetos sin propiedades
+- **WHEN** se pide una salida estructurada con un esquema que tiene un objeto sin propiedades declaradas (por ejemplo, `argumentos: dict[str, object]`), con cualquier proveedor
+- **THEN** la llamada falla con un error de esquema tipado antes de llamar al proveedor

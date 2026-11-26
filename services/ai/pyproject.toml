@@ -4,12 +4,21 @@ version = "0.1.0"
 description = "Servicio de IA del POC: llm_client, RAG, agente y API FastAPI."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "anthropic>=2.14.0",
+    "httpx2>=2.16.2",
+    "openai>=3.59.0",
+    "pydantic>=2.14.4",
+    "pydantic-settings>=2.16.3",
+    "sentence-transformers>=6.3.0",
+    "torch>=2.15.0",
+]
 
 [dependency-groups]
 dev = [
     "mypy>=2.4.1",
     "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.6",
 ]
@@ -48,7 +57,22 @@ files = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --strict-config"
+# `-m "not integration"`: `uv run pytest` es offline. Los tests de integración los corre
+# `scripts/verify.sh` según INTEGRATION (CI usa INTEGRATION=1) o `make test-integration`;
+# un `-m` posterior en la línea de comandos pisa a este.
+addopts = "-ra --strict-markers --strict-config -m 'not integration'"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
-    "integration: requiere servicios externos (Qdrant, proveedor LLM); no corre por defecto en CI rápido",
+    "integration: requiere servicios externos (modelo de embeddings real, proveedor LLM, Qdrant); no corre por defecto",
 ]
+
+# PyTorch solo para CPU: el índice de PyPI trae las ruedas con CUDA (varios GB).
+# `explicit = true` hace que este índice se use solo para los paquetes que lo piden.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
