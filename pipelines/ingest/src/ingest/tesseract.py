@@ -6,6 +6,8 @@ lanza el proceso y lee la salida. Requiere `tesseract-ocr` y el idioma `spa` ins
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 from functools import cached_property
 
 import pytesseract
@@ -13,6 +15,32 @@ from PIL import Image
 
 from ingest.ocr import OCRError
 from ingest.settings import IngestSettings
+
+VERSION_TIMEOUT_S = 10.0
+"""`pytesseract.get_tesseract_version()` llama a `check_output` sin timeout: si el binario
+se cuelga, se cuelga la ingesta. Por eso la versión se consulta acá, con timeout."""
+
+UNAVAILABLE = "tesseract no disponible"
+
+
+def _tesseract_version() -> str:
+    """Primera línea de `tesseract --version` (p. ej. "tesseract 5.3.4"), con timeout."""
+    binary = shutil.which("tesseract")
+    if binary is None:
+        return UNAVAILABLE
+    try:
+        # Binario resuelto con `which` y argumentos fijos: no entra nada del usuario.
+        result = subprocess.run(  # noqa: S603
+            [binary, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=VERSION_TIMEOUT_S,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return UNAVAILABLE
+    lines = (result.stdout or result.stderr).strip().splitlines()
+    return lines[0].strip() if lines else UNAVAILABLE
 
 
 class TesseractEngine:
@@ -26,12 +54,7 @@ class TesseractEngine:
 
     @cached_property
     def name(self) -> str:
-        try:
-            version = str(pytesseract.get_tesseract_version())
-        except (pytesseract.TesseractNotFoundError, SystemExit):
-            # get_tesseract_version() hace SystemExit si no entiende la versión.
-            version = "no disponible"
-        return f"tesseract {version} ({self._lang}, psm {self._psm})"
+        return f"{_tesseract_version()} ({self._lang}, psm {self._psm})"
 
     def recognize(self, image: Image.Image, *, dpi: int) -> str:
         # convert() devuelve una imagen sin `format`: pytesseract la guarda como PNG (sin

@@ -5,6 +5,7 @@ Hallazgo 3 de la revisión: el adaptador traduce los fallos de pytesseract a `OC
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from dataclasses import dataclass, field
 from io import BytesIO
@@ -90,14 +91,14 @@ class _FakeRun:
 
 @pytest.fixture
 def fake_binary(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(tesseract_module.shutil, "which", lambda name: "/usr/bin/tesseract")
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/tesseract")
 
 
 @pytest.mark.usefixtures("fake_binary")
 def test_la_version_se_consulta_con_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
     """Revisión 2, BAJO: `tesseract --version` también es un proceso y lleva timeout."""
     run = _FakeRun()
-    monkeypatch.setattr(tesseract_module.subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "run", run)
 
     name = TesseractEngine(IngestSettings(ocr_psm=3)).name
 
@@ -118,12 +119,12 @@ def test_la_version_se_consulta_con_timeout(monkeypatch: pytest.MonkeyPatch) -> 
 def test_si_la_version_no_responde_el_nombre_lo_dice(
     monkeypatch: pytest.MonkeyPatch, error: Exception
 ) -> None:
-    monkeypatch.setattr(tesseract_module.subprocess, "run", _FakeRun(outcome=error))
+    monkeypatch.setattr(subprocess, "run", _FakeRun(outcome=error))
 
     assert TesseractEngine().name.startswith("tesseract no disponible")
 
 
 def test_sin_binario_el_nombre_lo_dice(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(tesseract_module.shutil, "which", lambda name: None)
+    monkeypatch.setattr(shutil, "which", lambda name: None)
 
     assert TesseractEngine().name.startswith("tesseract no disponible")
