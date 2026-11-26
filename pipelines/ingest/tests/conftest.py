@@ -16,6 +16,7 @@ from tests.fakes import FakeOCREngine
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CORPUS_DIR = REPO_ROOT / "data" / "corpus"
+VALIDATION_DIR = REPO_ROOT / "data" / "corpus-validation"
 
 NATIVE_PARAGRAPH = (
     "Acme S.A. otorga 14 días corridos de vacaciones con menos de 5 años de antigüedad, "

@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from ingest.models import GroundTruthDocument
-from tests.conftest import CORPUS_DIR
+from tests.conftest import CORPUS_DIR, VALIDATION_DIR
 
 PII_PATTERNS: dict[str, re.Pattern[str]] = {
     "dni-con-puntos": re.compile(r"\b\d{2}\.\d{3}\.\d{3}\b"),
@@ -39,7 +39,10 @@ POSITIVE_EXAMPLES = {
     "telefono-generico": "interno o fijo 4567-8901",
 }
 
-DATA_DIRS = [pytest.param(CORPUS_DIR, id="corpus")]
+DATA_DIRS = [
+    pytest.param(CORPUS_DIR, id="corpus"),
+    pytest.param(VALIDATION_DIR, id="validacion"),
+]
 
 
 @pytest.mark.parametrize("name", sorted(PII_PATTERNS))
