@@ -102,7 +102,9 @@ class IngestReport(_Frozen):
     skipped: int = Field(ge=0)
     errors: int = Field(ge=0)
     warnings: int = Field(
-        ge=0, description="Documentos ingeridos con un aviso (por ejemplo, invalid_ground_truth)."
+        default=0,  # los reportes anteriores a los avisos no tienen el campo
+        ge=0,
+        description="Documentos ingeridos con un aviso (por ejemplo, invalid_ground_truth).",
     )
     pages_total: int = Field(ge=0)
     pages_by_method: dict[ExtractionMethod, int]
