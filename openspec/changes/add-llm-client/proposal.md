@@ -40,12 +40,14 @@ Todo el POC (RAG, agente y la evaluación con un LLM como juez) depende de model
 8. **`StructuredResponse[T]` (2026-11-26)**: `complete_structured` devuelve el objeto validado con el uso sumado de todos los intentos, la latencia, los intentos, el proveedor y el modelo. Al rendirse, loguea la llamada con resultado de error.
 9. **Tests de integración visibles (2026-11-26)**: `verify.sh` con `INTEGRATION=auto|1|0` y CI con `INTEGRATION=1`, Tesseract y la caché de Hugging Face.
 
+10. **Decisiones sobre lo que surgió al implementar (2026-11-26)**:
+    - `attempts` cuenta todos los pedidos al proveedor (con reintentos transitorios), en `StructuredResponse`, `LLMValidationError` y el log.
+    - Los esquemas cerrados también rechazan los campos `Any` y las uniones en la raíz.
+    - Los modelos e5 `-instruct` se rechazan con un error de configuración, en vez de embeberlos sin el prompt que necesitan.
+    - OpenAI `strict: true` queda afuera, porque depende de una función privada del SDK.
+    - Los errores de OpenAI a mitad de un stream se tratan como permanentes. Es una limitación conocida: OpenAI no es el proveedor por defecto.
+    - Se aceptan como están: reintentar los cortes de conexión, `system` y `max_tokens` como parámetros por llamada, `LLM_PROVIDER` y `EMBEDDINGS_PROVIDER` sin default, y `httpx2` en lugar de `httpx`.
+
 ## Preguntas abiertas
 
-Surgieron al implementar. Cada una tiene una implementación provisoria, que decide el autor.
-
-1. **Cortes de conexión**: la spec nombra timeout, 429 y 5xx como transitorios. Hoy un `APIConnectionError` también se reintenta, porque es un fallo de red y no un rechazo del proveedor. La alternativa es no reintentarlo: es más estricto con la spec, pero un corte breve de red le llegaría al usuario como error. **Recomendación**: mantener el reintento y sumarlo a la spec.
-2. **Parámetros `system` y `max_tokens`** en `complete`, `stream` y `complete_structured`: no están en la spec. `max_tokens` es obligatorio en Anthropic y el RAG va a necesitar un *system prompt*. Hoy el default es 1024 y no hay variable de entorno. **Recomendación**: dejarlos como parámetros por llamada.
-3. **`LLM_PROVIDER` y `EMBEDDINGS_PROVIDER` son obligatorias**: no tienen default. Si faltan, el arranque falla con un error de configuración, aunque `.env.example` sugiere `fake` y `local`. La alternativa es tomar esos valores por defecto: es más cómodo, pero un deploy mal configurado usaría el fake sin avisar.
-4. **`httpx` por `httpx2`**: la propuesta lista `httpx`, pero los SDKs instalados (anthropic 2.14 y openai 3.59) usan `httpx2`. Se declaró `httpx2` y se sacó `httpx`.
-5. **OpenAI en modo `strict`**: con esquemas cerrados ya se podría usar `strict: true`, que garantiza que la respuesta cumpla el esquema. Pero exige `additionalProperties: false` y todos los campos `required`, cosa que `model_json_schema()` no genera, y el SDK solo lo resuelve con un helper privado (`openai.lib._pydantic`). Hoy queda en `strict: false` y validamos nosotros. **Recomendación**: revisarlo si se usa OpenAI en serio.
+Ninguna.

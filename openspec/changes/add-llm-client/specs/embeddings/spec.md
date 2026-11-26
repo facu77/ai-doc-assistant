@@ -28,6 +28,10 @@ El sistema SHALL distinguir entre embeddings de consultas y de pasajes (document
 - **WHEN** `EMBEDDINGS_MODEL` es un modelo que no es de la familia e5 (por ejemplo, `sentence-transformers/all-MiniLM-L6-v2`)
 - **THEN** los textos se embeben sin los prefijos `"query: "` y `"passage: "`
 
+#### Scenario: Modelo e5 instruct
+- **WHEN** `EMBEDDINGS_MODEL` es una variante e5 `-instruct` (por ejemplo, `intfloat/multilingual-e5-large-instruct`), cuyo formato de prompt no está implementado
+- **THEN** el arranque falla con un error de configuración que lo explica, antes de cargar el modelo
+
 ### Requirement: Determinismo
 Para el mismo modelo y el mismo texto, el sistema MUST producir el mismo vector en corridas sucesivas, dentro de una tolerancia numérica.
 

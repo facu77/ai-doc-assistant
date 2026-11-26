@@ -67,11 +67,22 @@ class LlamadaHerramienta(BaseModel):
     llamada: Annotated[BuscarDocumentos | ObtenerPagina, Field(discriminator="herramienta")]
 ```
 
-Un esquema con un objeto sin propiedades (`dict[str, object]`), un campo `Any` o una unión
-en la raíz se rechaza con `LLMSchemaError` antes de llamar al proveedor (`llm/schema.py`).
+Se rechaza con `LLMSchemaError`, antes de llamar al proveedor (`llm/schema.py`), un esquema
+que tenga alguno de estos elementos:
+
+- un objeto sin propiedades: `dict[str, object]` o un modelo sin campos;
+- un objeto que admite propiedades libres (`extra="allow"`);
+- un campo `Any`;
+- un array sin `items` (por ejemplo, una tupla);
+- una unión en la raíz.
+
 El motivo es que `anthropic.transform_schema` convierte un dict libre en un objeto vacío y
 cerrado, y el modelo no puede llenar nada. Si la respuesta no valida, se reintenta una vez
 con el error como contexto. Si vuelve a fallar, se levanta `LLMValidationError`.
+
+Limitaciones conocidas de OpenAI: la salida estructurada va con `strict: false`, porque
+`strict: true` depende de una función privada del SDK, y la valida Pydantic. Un error a mitad
+de un stream de OpenAI se trata como permanente y no se reintenta.
 
 ### Configuración
 
@@ -116,10 +127,11 @@ pasajes = await embedder.embed_passages(["Procedimiento para solicitar la licenc
 | `EMBEDDINGS_MODEL` | `intfloat/multilingual-e5-small` | Modelo de sentence-transformers (384 dimensiones). Si cambia, hay que reindexar |
 | `EMBEDDINGS_BATCH_SIZE` | `64` | Textos por lote |
 
-Los prefijos dependen del id del modelo. Si el último segmento empieza con `e5-` o
-`multilingual-e5-` y no es una variante `-instruct`, se usan `query: ` y `passage: `.
-Cualquier otro modelo va sin prefijo. Las variantes `-instruct` usan otro formato, que este
-POC no implementa.
+Los prefijos dependen del id del modelo, tanto con la fábrica como con el constructor de
+`LocalEmbedder`. Si el último segmento empieza con `e5-` o `multilingual-e5-`, se usan
+`query: ` y `passage: `. Cualquier otro modelo va sin prefijo. Las variantes `-instruct`
+necesitan un prompt `Instruct: ...` que este POC no implementa, así que se rechazan con
+`EmbeddingsConfigError` antes de cargar el modelo.
 
 El modelo se descarga de Hugging Face la primera vez (unos 470 MB en `~/.cache/huggingface`).
 
@@ -131,7 +143,7 @@ Llevan `@pytest.mark.integration` y `uv run pytest` los excluye (`addopts` con
 | `INTEGRATION` | Qué hace |
 | --- | --- |
 | `auto` (default) | `services/ai` corre si el modelo e5 ya está en la caché de Hugging Face, y `pipelines/ingest` si existe y `tesseract` está instalado. Si no, el resumen muestra `SKIP` con el motivo. No descarga nada |
-| `1` | Los corre siempre. Descarga e5 si hace falta, salvo con `HF_HUB_OFFLINE=1`. Si falta una dependencia, el paso falla. Es lo que usa CI |
+| `1` | Los corre siempre. Descarga e5 si hace falta, salvo con `HF_HUB_OFFLINE=1`. Si falta una dependencia, o si pytest no recolecta ningún test de integración (código 5), el paso falla. Es lo que usa CI |
 | `0` | No los corre |
 
 ```bash

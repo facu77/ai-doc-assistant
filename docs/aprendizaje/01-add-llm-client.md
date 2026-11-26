@@ -101,7 +101,7 @@ El consumidor del streaming ya recibió texto (y quizás ya se lo mostró al usu
 - La llamada es una **unión discriminada**: `BuscarDocumentos | ObtenerPagina` con `Field(discriminator="herramienta")`. Pydantic lee el campo `herramienta` y valida contra la variante que corresponde. Si viene `"borrar_todo"`, la respuesta no valida.
 - La unión va **dentro de un modelo contenedor** (`LlamadaHerramienta(llamada: ...)`), porque una unión en la raíz no es un objeto: `transform_schema` la devuelve como `anyOf`, sin `type: object`.
 
-`ensure_closed_schema` (`llm/schema.py:68`) recorre el JSON Schema y rechaza con `LLMSchemaError`, **antes de gastar una request**, los objetos sin propiedades, los que admiten propiedades libres, los campos `Any` y las raíces que no son objeto. Si la respuesta no valida, se reintenta una vez con el error resumido como contexto (`_summarize`, `llm/resilient.py:55`). Si vuelve a fallar, se levanta `LLMValidationError` y se loguea la llamada con `outcome=error`.
+`ensure_closed_schema` (`llm/schema.py:72`) recorre el JSON Schema y rechaza con `LLMSchemaError`, **antes de gastar una request**, los objetos sin propiedades, los que admiten propiedades libres (`extra="allow"`), los campos `Any`, los arrays sin `items` y las raíces que no son objeto. Una tupla (`tuple[int, str]`) sale como `prefixItems`, que `transform_schema` no entiende y deja como texto en la descripción, así que el array queda sin tipo de elemento. Lo seguro es usar una lista de un modelo. Si la respuesta no valida, se reintenta una vez con el error resumido como contexto (`_summarize`, `llm/resilient.py:55`). Si vuelve a fallar, se levanta `LLMValidationError` y se loguea la llamada con `outcome=error`.
 
 **Lo que hace `anthropic.transform_schema` con una unión** (leído en el código instalado, `anthropic/lib/_parse/_transform.py`): convierte `oneOf` en `anyOf`, resuelve las `$defs` y pone `additionalProperties: false` en cada objeto. El `discriminator` de Pydantic no lo entiende y lo deja como texto en la `description`. No pasa nada, porque cada variante tiene su `const` y el `anyOf` sigue siendo cerrado.
 
@@ -127,21 +127,22 @@ En `DEBUG`, el SDK de Anthropic loguea las opciones de cada request **con el cue
 
 ## 11. Embeddings: prefijos, normalización, determinismo, lotes
 
-- **Prefijos `query:` y `passage:`**: la familia e5 se entrenó así. La interfaz obliga a elegir el rol (`embed_queries` o `embed_passages`). Los prefijos se deciden por el id del modelo (`e5_prefixes`, `embeddings/local.py:33`): si el último segmento empieza con `e5-` o `multilingual-e5-` y no es `-instruct`, se usan. Cualquier otro modelo va sin prefijo: a `all-MiniLM-L6-v2` un `"query: "` le metería ruido.
-- **Normalización**: `normalize_embeddings=True` (`embeddings/local.py:98`) deja cada vector con norma 1, y entonces la similitud coseno `a·b / (|a||b|)` se reduce a `a·b`, el producto interno.
+- **Prefijos `query:` y `passage:`**: la familia e5 se entrenó así. La interfaz obliga a elegir el rol (`embed_queries` o `embed_passages`). Los prefijos se deciden por el id del modelo (`e5_prefixes`, `embeddings/local.py:34`): si el último segmento empieza con `e5-` o `multilingual-e5-`, se usan, también cuando se construye `LocalEmbedder` a mano. Cualquier otro modelo va sin prefijo: a `all-MiniLM-L6-v2` un `"query: "` le metería ruido. Los e5 `-instruct` esperan otro formato (`Instruct: ...\nQuery: `). Embeberlos con `query: ` no da error, pero baja la calidad sin que nadie se entere. Por eso se rechazan con `EmbeddingsConfigError` antes de cargar el modelo: **ante una configuración que sabemos que está mal, mejor un error ruidoso que un resultado silenciosamente peor**.
+- **Normalización**: `normalize_embeddings=True` (`embeddings/local.py:108`) deja cada vector con norma 1, y entonces la similitud coseno `a·b / (|a||b|)` se reduce a `a·b`, el producto interno.
 - **Determinismo**: en CPU, el mismo texto da el mismo vector (coseno ≥ 0,9999 entre corridas, test `test_dos_corridas`).
-- **Lotes**: `_embed` parte la lista en lotes de `EMBEDDINGS_BATCH_SIZE` (`embeddings/local.py:130`) y concatena en orden. Un test de la fábrica comprueba que `EMBEDDINGS_BATCH_SIZE=7` produce lotes de 7, 7 y 6.
+- **Lotes**: `_embed` parte la lista en lotes de `EMBEDDINGS_BATCH_SIZE` (`embeddings/local.py:137`) y concatena en orden. Un test de la fábrica comprueba que `EMBEDDINGS_BATCH_SIZE=7` produce lotes de 7, 7 y 6.
 
 ## 12. `asyncio.to_thread` para trabajo de CPU
 
-`SentenceTransformer.encode` es síncrono y usa la CPU a fondo. Si se llamara directo dentro de un `async def`, el event loop quedaría bloqueado y FastAPI dejaría de atender **todas** las requests. `asyncio.to_thread` (`embeddings/local.py:133`) lo corre en un hilo aparte. PyTorch libera el GIL (*Global Interpreter Lock*) mientras calcula, así que el loop sigue vivo. `test_el_modelo_corre_fuera_del_event_loop` (`tests/embeddings/test_embedder.py:135`) lo prueba con un "latido": una tarea que suma 1 cada 10 ms tiene que seguir sumando mientras el encoder bloquea 0,3 s.
+`SentenceTransformer.encode` es síncrono y usa la CPU a fondo. Si se llamara directo dentro de un `async def`, el event loop quedaría bloqueado y FastAPI dejaría de atender **todas** las requests. `asyncio.to_thread` (`embeddings/local.py:140`) lo corre en un hilo aparte. PyTorch libera el GIL (*Global Interpreter Lock*) mientras calcula, así que el loop sigue vivo. `test_el_modelo_corre_fuera_del_event_loop` (`tests/embeddings/test_embedder.py:137`) lo prueba con un "latido": una tarea que suma 1 cada 10 ms tiene que seguir sumando mientras el encoder bloquea 0,3 s.
 
 ## 13. Tests de integración visibles
 
 Un test marcado `integration` que nadie corre es casi lo mismo que no tenerlo. `scripts/verify.sh` acepta `INTEGRATION=auto|1|0`:
 
 - En **`auto`**, local, corre los de `services/ai` solo si el modelo e5 ya está en la caché de Hugging Face. El criterio es simple: existe un `model.safetensors` en `models--intfloat--multilingual-e5-small/snapshots/`. Una corrida local nunca baja 470 MB sin avisar. Si no corren, el resumen dice `SKIP` y por qué.
-- En **`1`**, que usa CI, corren siempre, y la falta de una dependencia es un `FALLO`, no un `SKIP` silencioso. CI instala Tesseract y cachea `~/.cache/huggingface` con `actions/cache`, así el modelo se baja una sola vez.
+- En **`1`**, que usa CI, corren siempre, y la falta de una dependencia es un `FALLO`, no un `SKIP` silencioso. Lo mismo pasa si pytest no recolecta ningún test de integración (código de salida 5): si se pidió correrlos y no corrió ninguno, algo está mal. CI instala Tesseract y cachea `~/.cache/huggingface` con `actions/cache`, así el modelo se baja una sola vez.
+- Las actions de CI se fijan por **SHA completo** (con un comentario de la versión), porque un tag como `v6` se puede mover y un commit no. Es una defensa contra que una action comprometida cambie lo que corre en tu CI.
 
 ## Decisiones y su porqué
 
@@ -152,8 +153,10 @@ Un test marcado `integration` que nadie corre es casi lo mismo que no tenerlo. `
 | Esquemas cerrados y uniones discriminadas (decisión del autor) | Un dict libre se vacía en `transform_schema`. Un modelo por herramienta deja que el proveedor y Pydantic validen cada argumento |
 | Tope de `Retry-After` de 30 s (decisión del autor) | Más que eso es peor que fallar rápido con un error claro |
 | `StructuredResponse[T]` (decisión del autor) | El consumidor necesita el costo y los intentos de la operación completa |
-| OpenAI con `strict: false` | `strict: true` necesita un helper privado del SDK. Validamos nosotros (pregunta abierta) |
-| Corte de conexión = transitorio | Es un fallo de red y no un rechazo del proveedor (pregunta abierta) |
+| OpenAI con `strict: false` (decisión del autor) | `strict: true` necesita un helper privado del SDK. El esquema ya es cerrado y Pydantic valida la respuesta |
+| Errores a mitad de stream de OpenAI = permanentes (decisión del autor) | Limitación conocida y aceptada: OpenAI no es el proveedor por defecto |
+| e5 `-instruct` se rechaza (decisión del autor) | Un error al arrancar es mejor que vectores peores sin aviso |
+| Corte de conexión = transitorio (aceptado) | Es un fallo de red y no un rechazo del proveedor |
 | `make install` con `uv sync --locked` | Si `uv.lock` no coincide con `pyproject.toml`, falla en vez de reescribirlo en silencio |
 
 ## Errores típicos
