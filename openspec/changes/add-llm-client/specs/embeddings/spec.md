@@ -24,6 +24,10 @@ El sistema SHALL distinguir entre embeddings de consultas y de pasajes (document
 - **WHEN** se generan el embedding de consulta y el de pasaje para el texto "licencia anual"
 - **THEN** los dos vectores tienen la dimensión del modelo y no son idénticos
 
+#### Scenario: Modelo fuera de la familia e5
+- **WHEN** `EMBEDDINGS_MODEL` es un modelo que no es de la familia e5 (por ejemplo, `sentence-transformers/all-MiniLM-L6-v2`)
+- **THEN** los textos se embeben sin los prefijos `"query: "` y `"passage: "`
+
 ### Requirement: Determinismo
 Para el mismo modelo y el mismo texto, el sistema MUST producir el mismo vector en corridas sucesivas, dentro de una tolerancia numérica.
 
