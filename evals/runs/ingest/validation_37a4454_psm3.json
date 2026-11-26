@@ -1,0 +1,140 @@
+{
+  "pipeline_version": "2",
+  "ocr_engine": "tesseract 5.3.4 (spa+eng, psm 3)",
+  "config_hash": "2e4681eb1fd4fda0448a9be6cb325659a1803b8abe980860f8c98757a522214b",
+  "documents_total": 6,
+  "processed": 6,
+  "skipped": 0,
+  "errors": 0,
+  "pages_total": 6,
+  "pages_by_method": {
+    "native": 0,
+    "ocr": 6
+  },
+  "cer_by_category": {
+    "clean_scan": {
+      "documents": 3,
+      "mean_cer": 0.002558940939643113,
+      "max_cer": 0.006329113924050633
+    },
+    "noisy_scan": {
+      "documents": 3,
+      "mean_cer": 0.0,
+      "max_cer": 0.0
+    }
+  },
+  "mean_cer": 0.0012794704698215564,
+  "total_seconds": 13.801004075000037,
+  "pages_processed": 6,
+  "seconds_per_page": 2.3001673458333394,
+  "documents": [
+    {
+      "source": "v01-boletin-interno.pdf",
+      "status": "processed",
+      "doc_id": "d3ad77258e047c9926f9a788ed911e5dc15aab5681dadf3a0977bdcdff0a20b6",
+      "category": "clean_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0013477088948787063
+        }
+      ],
+      "cer": 0.0013477088948787063,
+      "seconds": 2.8792387790000475,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "v02-planilla-horas-extra.pdf",
+      "status": "processed",
+      "doc_id": "58837f9fe609e8b32a04d9130bbb60031d1798aefe33ea52499dfcf3727de78b",
+      "category": "clean_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.006329113924050633
+        }
+      ],
+      "cer": 0.006329113924050633,
+      "seconds": 2.2478809109999247,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "v03-memo-feriados.pdf",
+      "status": "processed",
+      "doc_id": "6a2f95c88662a12f13b442881e447e4b1af8bb73507c9ffed2cc087be638eec8",
+      "category": "clean_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.23845010499997,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "v04-solicitud-reintegro-guarderia.jpg",
+      "status": "processed",
+      "doc_id": "728c867c7d4390e1b030e540658186587196d2e8da98ea4657800da4295ca0b5",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 1.8043018060000122,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "v05-guia-rapida-beneficios.pdf",
+      "status": "processed",
+      "doc_id": "916294041265a7a113628db98ec5b70a89a5ca11a19ecc8c4a4dbde7282d85fb",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.4356611910000083,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "v06-aviso-mantenimiento-edificio.pdf",
+      "status": "processed",
+      "doc_id": "0479d317dab1be4b3c378ea02a5bb8bef57550c6c26e0da9461ede0b6426ba75",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.1942943870000136,
+      "error": null,
+      "error_detail": null
+    }
+  ]
+}

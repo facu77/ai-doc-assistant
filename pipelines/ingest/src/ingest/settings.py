@@ -29,6 +29,9 @@ class IngestSettings(BaseSettings):
         default=3,
         ge=0,
         le=13,
-        description="Modo de segmentación de página de Tesseract (3: automático).",
+        description=(
+            "Modo de segmentación de página de Tesseract. 3 (automático) lo eligió la regla "
+            "preregistrada sobre el set de validación (design.md)."
+        ),
     )
     ocr_timeout_s: float = Field(default=120.0, gt=0, description="Timeout por página de OCR.")
