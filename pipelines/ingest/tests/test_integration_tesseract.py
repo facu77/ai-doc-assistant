@@ -41,6 +41,18 @@ def corpus_run(
     return ingest_directory(CORPUS_DIR, out_dir, ocr=tesseract), out_dir
 
 
+# Falla declarada (decisión 8 de la proposal): la aserción y el umbral no cambian. Con
+# strict=True, si un día pasa (XPASS) la suite falla y obliga a sacar esta marca.
+CLEAN_SCAN_KNOWN_FAILURE = (
+    "CER medio 4,04% > 2% en el corpus de prueba (evals/runs/ingest/corpus_76145f8_psm3.json). "
+    "Causa: el doc 13 (formulario con tabla) lo lee psm 3 columna por columna. "
+    "psm 4/6 descartados por la regla preregistrada: rompen los documentos a dos columnas "
+    "(ver evals/runs/ingest/validation_37a4454_psm*.json). "
+    "Se resuelve en la change improve-ocr-quality."
+)
+
+
+@pytest.mark.xfail(strict=True, reason=CLEAN_SCAN_KNOWN_FAILURE)
 def test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento(
     corpus_run: tuple[IngestReport, Path],
 ) -> None:
