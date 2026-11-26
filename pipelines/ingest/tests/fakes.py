@@ -43,3 +43,34 @@ class FailingOCREngine:
     def recognize(self, image: Image.Image, *, dpi: int) -> str:
         self.calls += 1
         raise OCRError("motor de OCR caído (falso)")
+
+
+@dataclass
+class DirtyTextOCREngine:
+    """Devuelve texto con la suciedad típica de Tesseract: blancos, tabs, líneas vacías y el
+    salto de página (form feed, \\x0c) que agrega al final."""
+
+    text: str = "  Página\t uno \n\n\n\x0c"
+    name: str = "dirty-ocr"
+
+    def recognize(self, image: Image.Image, *, dpi: int) -> str:
+        return self.text
+
+
+@dataclass
+class PixelMeanOCREngine:
+    """Sensible a la imagen: "lee" el brillo medio de los píxeles que recibe.
+
+    Detecta si el pipeline rasteriza la página equivocada o manda una imagen en blanco,
+    cosas que un fake que ignora la imagen no puede ver.
+    """
+
+    name: str = "pixel-mean-ocr"
+    means: list[float] = field(default_factory=list)
+
+    def recognize(self, image: Image.Image, *, dpi: int) -> str:
+        gray = image.convert("L")
+        histogram = gray.histogram()
+        mean = sum(value * count for value, count in enumerate(histogram)) / sum(histogram)
+        self.means.append(mean)
+        return f"media {mean:.1f}"

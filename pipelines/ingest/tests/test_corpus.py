@@ -96,18 +96,16 @@ def test_corpus_es_ficticio_correos_solo_del_dominio_reservado(corpus_dir: Path)
 
 
 def test_generacion_con_la_misma_semilla_es_reproducible(corpus_dir: Path, tmp_path: Path) -> None:
-    """Scenario: Generación reproducible. Misma semilla -> mismos 20 documentos y referencia."""
-    first = generate_corpus(tmp_path / "a", seed=DEFAULT_SEED)
-    second = generate_corpus(tmp_path / "b", seed=DEFAULT_SEED)
+    """Scenario: Generación reproducible. Misma semilla -> mismos 20 documentos y referencia.
 
-    assert first == second
-    for entry in first.documents:
-        assert (tmp_path / "a" / entry.source).read_bytes() == (
-            tmp_path / "b" / entry.source
-        ).read_bytes()
-    # El texto de referencia regenerado es el mismo que está versionado en el repo.
+    Anclado al manifiesto versionado (hallazgo 8): regenerar tiene que dar exactamente los
+    sha256 que están commiteados, no solo dos corridas iguales entre sí. Depende de las
+    versiones fijadas en uv.lock (reportlab, pymupdf, Pillow/libjpeg, numpy).
+    """
+    generated = generate_corpus(tmp_path / "a", seed=DEFAULT_SEED)
+
+    assert generated == _manifest(corpus_dir)
     assert _ground_truth(tmp_path / "a") == _ground_truth(corpus_dir)
-    assert first.seed == _manifest(corpus_dir).seed
 
 
 def test_otra_semilla_cambia_los_escaneos_pero_no_la_referencia(tmp_path: Path) -> None:

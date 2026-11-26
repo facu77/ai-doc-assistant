@@ -34,3 +34,9 @@ def test_cer_es_la_distancia_de_edicion_sobre_la_longitud_de_la_referencia() -> 
 def test_cer_con_referencia_vacia_no_se_puede_medir() -> None:
     with pytest.raises(ValueError, match="referencia vacía"):
         cer("  \n ", "algo")
+
+
+@pytest.mark.parametrize("hypothesis", ["", "   \n\x0c "], ids=["vacia", "solo-blancos"])
+def test_cer_con_hipotesis_vacia_es_1(hypothesis: str) -> None:
+    """Hallazgo 12: si el OCR no devuelve nada, son N borrados sobre N caracteres."""
+    assert cer("Hola mundo", hypothesis) == 1.0

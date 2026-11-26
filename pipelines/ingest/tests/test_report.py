@@ -130,3 +130,13 @@ def test_sin_texto_de_referencia_el_cer_queda_vacio(
     assert entry.category is None
     assert report.cer_by_category == {}
     assert report.mean_cer is None
+
+
+def test_mean_cer_global_es_el_promedio_simple_de_los_documentos_con_referencia(
+    corpus_run: tuple[IngestReport, Path],
+) -> None:
+    """Hallazgo 12: el CER medio global promedia documentos (no categorías ni caracteres)."""
+    report, _ = corpus_run
+    cers = [d.cer for d in report.documents if d.cer is not None]
+    assert len(cers) == 20
+    assert report.mean_cer == pytest.approx(fmean(cers))

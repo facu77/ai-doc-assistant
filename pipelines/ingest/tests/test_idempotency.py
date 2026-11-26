@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ingest.pipeline import DOCUMENTS_SUBDIR, ingest_directory
+from ingest.pipeline import DOCUMENTS_SUBDIR, ingest_directory, load_document
 from tests.conftest import native_page, text_image, write_pdf
 from tests.fakes import FakeOCREngine
 
@@ -85,4 +85,37 @@ def test_otra_version_del_pipeline_reprocesa_con_el_mismo_doc_id(
     [entry] = report.documents
     assert entry.status == "processed"
     assert len(ocr.calls) == 1
+    assert len(list((out_dir / DOCUMENTS_SUBDIR).glob("*.jsonl"))) == 1
+
+
+def test_archivo_renombrado_se_omite_y_conserva_el_nombre_original_en_la_salida(
+    in_dir: Path, out_dir: Path, fake_ocr: FakeOCREngine
+) -> None:
+    """Hallazgo 15 (comportamiento documentado en el README): el doc_id es del contenido."""
+    pdf = write_pdf(in_dir / "a-original.pdf", [native_page(1)])
+    first = ingest_directory(in_dir, out_dir, ocr=fake_ocr)
+    pdf.rename(in_dir / "b-renombrado.pdf")
+
+    second = ingest_directory(in_dir, out_dir, ocr=fake_ocr)
+
+    [entry] = second.documents
+    assert entry.source == "b-renombrado.pdf"
+    assert entry.status == "skipped"
+    assert entry.doc_id == first.documents[0].doc_id
+    [path] = sorted((out_dir / DOCUMENTS_SUBDIR).glob("*.jsonl"))
+    assert load_document(path).source == "a-original.pdf"
+
+
+def test_archivos_duplicados_en_el_mismo_lote_generan_una_sola_salida(
+    in_dir: Path, out_dir: Path, fake_ocr: FakeOCREngine
+) -> None:
+    pdf = write_pdf(in_dir / "a.pdf", [native_page(1)])
+    (in_dir / "b-copia.pdf").write_bytes(pdf.read_bytes())
+
+    report = ingest_directory(in_dir, out_dir, ocr=fake_ocr)
+
+    assert [(d.source, d.status) for d in report.documents] == [
+        ("a.pdf", "processed"),
+        ("b-copia.pdf", "skipped"),
+    ]
     assert len(list((out_dir / DOCUMENTS_SUBDIR).glob("*.jsonl"))) == 1

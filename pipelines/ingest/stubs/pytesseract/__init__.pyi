@@ -3,6 +3,8 @@
 # .venv/lib/python3.12/site-packages/pytesseract/pytesseract.py (líneas 98-111, 446 y 473).
 # Si se actualiza pytesseract, revisar estas firmas contra el código instalado.
 
+from typing import Literal
+
 from packaging.version import Version
 from PIL import Image
 
@@ -20,6 +22,6 @@ def image_to_string(
     lang: str | None = None,
     config: str = "",
     nice: int = 0,
-    output_type: str = "string",
+    output_type: Literal["string"] = "string",  # Output.STRING; otros tipos no devuelven str
     timeout: float = 0,
 ) -> str: ...
