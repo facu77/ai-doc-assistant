@@ -28,12 +28,26 @@ jobs:
       - name: Instalar OpenSpec CLI
         run: npm install -g @fission-ai/openspec@2.1.1
 
+      # OCR para los tests de integración de pipelines/ingest.
+      - name: Instalar Tesseract
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-spa
+
+      # Modelo de embeddings (~470 MB): se baja una vez y queda en la caché de Actions.
+      - name: Caché de Hugging Face
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ runner.os }}-multilingual-e5-small-v1
+
       - name: Instalar dependencias
         run: make install
 
       # El gate de evaluación (eval.sh --check) se activa con add-rag-core
       # y se endurece con add-deploy-and-ci.
+      # INTEGRATION=1: los tests de integración corren y, si falta una dependencia, fallan.
+      # Los de APIs pagas se saltean porque CI no tiene claves.
       - name: Verificar
         env:
           OPENSPEC_TELEMETRY: "0"
+          INTEGRATION: "1"
         run: make verify

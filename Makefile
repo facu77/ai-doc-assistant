@@ -1,7 +1,9 @@
 .PHONY: install verify eval up down specs test-integration
 
+# --locked: falla si uv.lock no coincide con pyproject.toml, en vez de reescribirlo.
 install:
-	cd services/ai && uv sync
+	cd services/ai && uv sync --locked
+	if [ -f pipelines/ingest/pyproject.toml ]; then cd pipelines/ingest && uv sync --locked; fi
 	cd services/gateway && npm ci
 
 verify:
