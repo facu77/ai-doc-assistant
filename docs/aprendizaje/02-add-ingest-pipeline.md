@@ -9,13 +9,13 @@ Qué se construyó en esta change y qué conceptos hay detrás. El RAG solo pued
 - **Nativo**: cada carácter está guardado como carácter, con su fuente y su posición. Esa información forma la *capa de texto*, y se lee sin OCR. Por ejemplo, `data/corpus/01-politica-licencias.pdf`.
 - **Escaneado**: la página es una foto. No hay caracteres, solo píxeles. Por ejemplo, `data/corpus/09-formulario-solicitud-vacaciones.pdf`.
 
-La capa de texto se lee con `page.get_text("text")`, en `src/ingest/pdf.py:59`.
+La capa de texto se lee con `page.get_text("text")`, en `src/ingest/pdf.py:79`.
 
 **El problema**: un mismo PDF puede mezclar los dos tipos. `19-manual-evaluacion-desempeno.pdf` tiene las páginas 1 y 3 nativas y la 2 escaneada. Por eso se decide **por página** y no por documento.
 
 **La regla** está en `src/ingest/detection.py:41`. Una página es nativa si tiene al menos 50 caracteres no blancos y al menos el 90 % de ellos son imprimibles. El ratio sirve para atrapar capas de texto rotas. Un caso típico son las fuentes sin tabla `ToUnicode`, que se extraen como `U+FFFD` (el carácter de reemplazo). Esa página "tiene texto", pero el texto es basura.
 
-**El caso borde del sello**: la página 2 de `20-constancia-capacitacion.pdf` es una imagen con un sello que tiene capa de texto: "RECIBIDO RRHH 02/11/2026". Son 24 caracteres con los espacios, pero la regla cuenta los **no blancos**, que son 22. Como no llega a 50, la página va a OCR. Además se rasteriza la página **completa** (`src/ingest/pipeline.py:196`), así que el OCR lee la imagen y el sello juntos.
+**El caso borde del sello**: la página 2 de `20-constancia-capacitacion.pdf` es una imagen con un sello que tiene capa de texto: "RECIBIDO RRHH 02/11/2026". Son 24 caracteres con los espacios, pero la regla cuenta los **no blancos**, que son 22. Como no llega a 50, la página va a OCR. Además se rasteriza la página **completa** (`src/ingest/pipeline.py:197`), así que el OCR lee la imagen y el sello juntos.
 
 El test `test_los_umbrales_de_deteccion_son_configurables` muestra qué pasa con un umbral demasiado bajo (10): la página se toma como nativa y su texto queda reducido al sello. Todo el contenido de la imagen se pierde **sin ningún error**.
 
@@ -41,15 +41,15 @@ Por eso conviene que el umbral sea conservador.
 
 ¿Por qué 300 dpi? Con 300 dpi, el cuerpo de una letra de 11 puntos ocupa unos 46 píxeles (11/72 × 300) y una minúscula de Helvetica mide unos 24 de alto. La documentación de Tesseract recomienda al menos 300 dpi, porque con letras de pocos píxeles los trazos se empastan y la precisión cae. Con mucha más resolución, el OCR tarda más sin ganar precisión.
 
-El rasterizado está en `src/ingest/pdf.py:72` (`get_pixmap(dpi=..., colorspace=GRAY)`). Las imágenes sueltas que declaran otra resolución en sus metadatos (por ejemplo, los `.jpg` del corpus vienen a 200 dpi) se reescalan a 300 dpi (`src/ingest/pipeline.py:240`). Así todas las páginas llegan al OCR con el mismo criterio.
+El rasterizado está en `src/ingest/pdf.py:94` (`get_pixmap(dpi=..., colorspace=GRAY)`). Las imágenes sueltas que declaran otra resolución en sus metadatos (por ejemplo, los `.jpg` del corpus vienen a 200 dpi) se reescalan a 300 dpi (`src/ingest/pipeline.py:241`). Así todas las páginas llegan al OCR con el mismo criterio.
 
-**No le creas siempre al metadato.** En la revisión aparecieron tres problemas (`_image_dpi`, `src/ingest/pipeline.py:212`):
+**No le creas siempre al metadato.** En la revisión aparecieron tres problemas (`_image_dpi`, `src/ingest/pipeline.py:213`):
 
 - **Valores implausibles**: muchas aplicaciones guardan 72 dpi por defecto, aunque la imagen se haya escaneado a 300. Si le creés, reescalás la imagen ×4 sin motivo. Por eso el dpi declarado solo se usa si está entre 100 y 600.
 - **El tipo**: los TIFF dan el dpi como `IFDRational`, que no es `float` pero sí `numbers.Real`.
 - **El redondeo**: un PNG guarda píxeles por metro, así que 100 dpi vuelve como 99,9998, y por eso la comparación se hace sobre el valor redondeado.
 
-Además hay un tope de píxeles por página, `MAX_OCR_PIXELS` (`src/ingest/pipeline.py:74`). Un plano A0 a 300 dpi tendría 139 Mpx. Si una página supera el tope, se baja la resolución y se le informa al motor el dpi efectivo.
+Además hay un tope de píxeles por página, `MAX_OCR_PIXELS` (`src/ingest/pipeline.py:76`). Un plano A0 a 300 dpi tendría 139 Mpx. Si una página supera el tope, se baja la resolución y se le informa al motor el dpi efectivo.
 
 > **Pregunta**: si escaneás un formulario a 72 dpi y lo reescalás a 300, ¿recuperás calidad? ¿Por qué el pipeline igual reescala?
 
@@ -71,8 +71,8 @@ Los modos de segmentación que importan acá:
 
 `pytesseract` no es una librería de OCR: es un envoltorio del programa `tesseract`. Guarda la imagen en un archivo temporal, lanza el proceso y lee el resultado. Al leer su código instalado aparecieron dos sorpresas:
 
-- **El timeout** lanza un `RuntimeError` genérico, no una excepción propia. Hay que atraparlo aparte (`src/ingest/tesseract.py:49`).
-- **Las imágenes abiertas desde un JPEG** se vuelven a guardar en JPEG antes de pasarlas a Tesseract, o sea que pierden calidad otra vez. `image.convert("L")` devuelve una imagen sin formato, y entonces pytesseract la guarda en PNG, sin pérdida (`src/ingest/tesseract.py:39`).
+- **El timeout** lanza un `RuntimeError` genérico, no una excepción propia. Hay que atraparlo aparte (`src/ingest/tesseract.py:72`).
+- **Las imágenes abiertas desde un JPEG** se vuelven a guardar en JPEG antes de pasarlas a Tesseract, o sea que pierden calidad otra vez. `image.convert("L")` devuelve una imagen sin formato, y entonces pytesseract la guarda en PNG, sin pérdida (`src/ingest/tesseract.py:62`).
 
 > **Pregunta**: ¿qué psm elegirías para un boletín a dos columnas? ¿Qué le pasaría al texto con psm 6?
 
@@ -129,7 +129,7 @@ El test `test_generacion_con_la_misma_semilla_es_reproducible` regenera el corpu
 
 El orden quedó registrado en la historia de git:
 
-1. Commit `7768799`: la regla de decisión, escrita en `design.md` antes de que existiera el set de validación. Candidatos psm 3, 4 y 6. Gana el de menor CER medio por página escaneada, y un empate con psm 3 (menos de 0,1 pp) se resuelve a favor de psm 3. Está implementada en `src/ingest/psm_selection.py:37` (`choose_psm`), con tests de la regla antes del código.
+1. Commit `7768799`: la regla de decisión, escrita en `design.md` antes de que existiera el set de validación. Candidatos psm 3, 4 y 6. Gana el de menor CER medio por página escaneada, y un empate con psm 3 (menos de 0,1 pp) se resuelve a favor de psm 3. Está implementada en `src/ingest/psm_selection.py:43` (`choose_psm`), con tests de la regla antes del código.
 2. Commit `37a4454`: el set de validación. Lleva 2 documentos a dos columnas, 2 formularios con tabla y 2 textos corridos, una composición fijada sin haber medido.
 3. Commit `76145f8`: la medición sobre la validación. Resultado: psm 3 0,13 %, psm 4 11,17 % y psm 6 18,40 %, así que se eligió psm 3.
 4. Commit `ffe6d79`: la única corrida del corpus de prueba con psm 3. El escaneo limpio dio 4,04 % y no se ajustó nada más. El test quedó como falla declarada (sección 10).
@@ -144,7 +144,7 @@ El orden quedó registrado en la historia de git:
 
 **Idempotente**: correr dos veces da el mismo resultado que correr una vez. Acá la segunda corrida omite los 20 documentos en 0,02 s, sin una sola llamada al OCR (`evals/runs/ingest/corpus_76145f8_psm3_reingesta.json`).
 
-**`doc_id` = sha256 del archivo** (`src/ingest/pipeline.py:144`):
+**`doc_id` = sha256 del archivo** (`src/ingest/pipeline.py:145`):
 
 - El mismo contenido da el mismo id, aunque cambien el nombre o la carpeta.
 - Si cambia un solo byte, cambia el id.
@@ -153,13 +153,13 @@ Si se usara el nombre del archivo, renombrarlo duplicaría el documento, y edita
 
 **La clave de idempotencia es el `doc_id` más la configuración.** En la ronda 1, el salteo miraba solo el `doc_id` y la `PIPELINE_VERSION`. Si reingestabas en el mismo directorio con otro psm, el pipeline omitía todo y te quedabas con la salida vieja, sin ningún aviso.
 
-Ahora la salida guarda `ocr_engine` y `config_hash` (`config_hash`, `src/ingest/pipeline.py:116`): el sha256 de un JSON canónico, con claves ordenadas, que tiene la versión del pipeline, los umbrales de detección, el dpi, los idiomas, el psm y el nombre del motor. Un documento se omite solo si coinciden el `doc_id` **y** el `config_hash` (`pipeline.py:134` y `pipeline.py:345`).
+Ahora la salida guarda `ocr_engine` y `config_hash` (`config_hash`, `src/ingest/pipeline.py:117`): el sha256 de un JSON canónico, con claves ordenadas, que tiene la versión del pipeline, los umbrales de detección, el dpi, los idiomas, el psm y el nombre del motor. Un documento se omite solo si coinciden el `doc_id` **y** el `config_hash` (`pipeline.py:135` y `pipeline.py:353`).
 
 El timeout **no** entra en la huella: cambiarlo no cambia el texto que sale. La regla general es que entra todo lo que cambia la salida, y nada más. Si metieras algo que no la cambia, cada ajuste irrelevante forzaría a reprocesar todo.
 
-`PIPELINE_VERSION` (`pipeline.py:51`) sigue existiendo para los cambios de lógica, que no son configuración. Pasó de 1 a 2 cuando cambió el esquema de la salida.
+`PIPELINE_VERSION` (`pipeline.py:53`) sigue existiendo para los cambios de lógica, que no son configuración. Pasó de 1 a 2 cuando cambió el esquema de la salida.
 
-**Escritura atómica** (`pipeline.py:113`): primero se escribe un `.tmp` y después se hace `os.replace`. Si el proceso se corta a la mitad, no queda un JSONL cortado que la próxima corrida tome por válido.
+**Escritura atómica** (`pipeline.py:114`): primero se escribe un `.tmp` y después se hace `os.replace`. Si el proceso se corta a la mitad, no queda un JSONL cortado que la próxima corrida tome por válido.
 
 > **Pregunta**: dos archivos con distinto nombre e idéntico contenido entran en el mismo lote. ¿Cuántos JSONL quedan y qué estado tiene cada uno en el reporte?
 
@@ -191,19 +191,24 @@ La CI corre solo la suite rápida (`addopts = -m 'not integration'`, `pyproject.
 
 ## 9. Aislar los errores en un lote
 
-Cada archivo se procesa en su propio bloque `try` (`src/ingest/pipeline.py:303`). Un error se convierte en un código y queda en el reporte. Después, el lote sigue con el siguiente archivo. Los códigos son:
+Cada archivo se procesa en su propio bloque `try` (`src/ingest/pipeline.py:304`). Si falla, el error se convierte en un código y queda en el reporte, y el lote sigue con el siguiente archivo:
 
 - `unsupported_format`: formato no soportado.
 - `unreadable_file`: el archivo no se puede leer.
 - `ocr_failed`: el OCR falló.
-- `invalid_ground_truth`: el texto de referencia está roto.
 
-**Qué atrapar** (ronda 2, hallazgo 3): en la ronda 1, solo se atrapaban los errores "esperados" (`PdfReadError` o una imagen no reconocida). Después aparecieron dos huecos:
+Un texto de referencia roto **no** es un error: se reporta como aviso `invalid_ground_truth`, y el documento se ingiere igual, sin CER (decisión 10). La referencia sirve para medir, no para ingerir.
 
-- Una bomba de descompresión (una imagen chica en disco que ocupa gigas en memoria): Pillow lanza `DecompressionBombError`, que **no** hereda de `OSError`.
-- Un `RuntimeError` de pymupdf dentro de una página.
+**Qué atrapar, y dónde.** Las dos revisiones ajustaron esto:
 
-Cualquiera de los dos cortaba el lote entero. Ahora las familias de errores de las librerías (`_UNREADABLE_ERRORS`, `pipeline.py:83`) se reportan como `unreadable_file`. Un `except Exception` genérico se evitó a propósito: un `AttributeError` es un bug tuyo y tiene que verse, no esconderse como "archivo ilegible".
+1. **Ronda 2.** Una bomba de descompresión (una imagen chica en disco que ocupa gigas en memoria) hace que Pillow lance `DecompressionBombError`, que **no** hereda de `OSError`. Junto con un `RuntimeError` de pymupdf, cortaba el lote entero.
+2. **Primer arreglo.** Atrapar `RuntimeError`, `ValueError` y `TypeError` en todo el pipeline. Era demasiado amplio: un `ValueError` del código propio (por ejemplo, una `ValidationError` de Pydantic al construir un modelo) también terminaba reportado como "archivo ilegible", y un bug quedaba escondido como si fuera un dato malo.
+3. **Arreglo actual (ronda 4).** Las excepciones se traducen **en el borde** con la librería:
+   - pymupdf: `_library_errors` (`src/ingest/pdf.py:26`) envuelve cada llamada a pymupdf y Pillow del adaptador y las convierte en `PdfReadError`.
+   - Imágenes: `_IMAGE_READ_ERRORS` (`src/ingest/pipeline.py:85`) se atrapa solo alrededor de `Image.open` y de la lectura de cuadros.
+   - Lectura del archivo: el `OSError` de `sha256_file` también cuenta (`pipeline.py:346`).
+   
+   Todo lo demás se propaga. El test `test_un_bug_propio_no_se_disfraza_de_unreadable_file` lo fija.
 
 La alternativa, *fail-fast* (cortar en el primer error), es buena en un script interactivo. Pero en una ingesta de miles de documentos, un PDF corrupto no puede frenar todo.
 
@@ -232,6 +237,8 @@ El `strict=True` le pone vencimiento a la marca. Si el test empieza a pasar (XPA
 
 Lo que **no** se tocó: la aserción `stats.mean_cer <= CLEAN_SCAN_MAX_CER` y el umbral. El `xfail` declara que el sistema no cumple el contrato; no cambia el contrato.
 
+**El `xfail` no reemplaza a un gate de regresión** (decisión 9). Mientras el 2 % no se alcanza, `test_escaneo_limpio_no_empeora_respecto_de_la_linea_base` (sin `xfail`) exige que el CER limpio no supere la línea base versionada (4,04 %, leída de `evals/runs/ingest/corpus_76145f8_psm3.json`) + 0,5 pp. Se comprobó que detecta una regresión: con `INGEST_OCR_LANG=eng` el limpio sube a 5,41 % y falla. Sin el gate, el `xfail` dejaría pasar cualquier empeoramiento, porque "ya fallaba". El `raises=AssertionError` agrega otra garantía: si el test explota por otra cosa (un `KeyError`, Tesseract caído), no queda escondido como "la falla conocida".
+
 > **Pregunta**: ¿por qué un `xfail` sin `strict` es peor que uno con `strict` justo el día en que alguien arregla el problema en `improve-ocr-quality`?
 
 ## Decisiones y su porqué
@@ -239,7 +246,7 @@ Lo que **no** se tocó: la aserción `stats.mean_cer <= CLEAN_SCAN_MAX_CER` y el
 | Decisión | Por qué | Alternativa descartada |
 | --- | --- | --- |
 | `pymupdf>=1.28.2,<2` | La serie 2.x obliga a instalar onnxruntime (73 MB) y paquetes de layout y LLM que no se usan | pypdf + pypdfium2: dos librerías en lugar de una |
-| pytesseract con un stub de tipos local (`stubs/pytesseract`) | No trae tipos ni tiene stubs en typeshed. El stub cubre los 4 símbolos que se usan, con las firmas copiadas del código instalado | Llamar a `tesseract` con `subprocess`: más control, pero reimplementa lo que la librería ya hace |
+| pytesseract con un stub de tipos local (`stubs/pytesseract`) | No trae tipos ni tiene stubs en typeshed. El stub cubre los 3 símbolos que se usan, con las firmas copiadas del código instalado. La versión de Tesseract se consulta aparte, con `subprocess.run` y timeout, porque `get_tesseract_version()` no tiene timeout | Llamar a `tesseract` con `subprocess`: más control, pero reimplementa lo que la librería ya hace |
 | `untyped_calls_exclude = ["pymupdf"]` y validación en `pdf.py` | pymupdf trae `py.typed`, pero `get_text` no tiene anotaciones. Se aísla en un módulo que chequea cada tipo | Un `# type: ignore` en cada llamada |
 | Un JSONL por documento, con una sola línea | Si concatenás los archivos, obtenés el JSONL del corpus. El nombre del archivo es el `doc_id` | Un JSONL por página: el registro de la spec es por documento |
 | La salida conserva los saltos de línea | `add-rag-core` los usa para detectar títulos al hacer chunking | Aplanar todo, como para el CER |

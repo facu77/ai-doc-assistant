@@ -22,7 +22,7 @@
 ## 4. Cierre
 
 - [x] 4.1 Correr `/verify` en verde y la corrida completa con el reporte commiteado en `pipelines/ingest/REPORT.md` (el escenario de escaneo limpio, 4,04 % contra 2 %, queda como `xfail(strict=True)` por la decisión 8; se resuelve en `improve-ocr-quality`)
-- [ ] 4.2 Pasar `reviewer` y documentar en el README el CER medido y las limitaciones del corpus sintético (README hecho; falta el `reviewer`)
+- [x] 4.2 Pasar `reviewer` y documentar en el README el CER medido y las limitaciones del corpus sintético (2ª pasada: REQUIERE CAMBIOS menores, cerrados en la ronda 4)
 
 ## 5. Ronda 2 (decisiones del autor y revisión, 2026-11-26)
 
@@ -33,3 +33,4 @@
 - [x] 5.5 Agregar la huella de configuración y el motor de OCR a la clave de idempotencia (escenario nuevo en la spec)
 - [x] 5.6 Corregir los hallazgos 3, 4, 5, 8, 9, 10, 11, 12, 13 y 15 de la revisión
 - [x] 5.7 Declarar el escenario de escaneo limpio como `xfail(strict=True)` y crear la change `improve-ocr-quality` (decisión 8)
+- [x] 5.8 Ronda 4: gate de regresión del escaneo limpio (decisión 9), referencia ilegible como aviso (decisión 10) y hallazgos de la 2ª revisión

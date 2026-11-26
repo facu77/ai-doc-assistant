@@ -22,7 +22,11 @@ Archivos: `validation_37a4454_psm3.json`, `validation_37a4454_psm4.json` y `vali
 | `v06-aviso-mantenimiento-edificio.pdf` | texto corrido | ruidoso | 0.00 % | 0.00 % | 0.00 % |
 | **CER medio por página escaneada** | | | **0.13 %** | **11.17 %** | **18.40 %** |
 
-**psm elegido: 3.** psm 4 y 6 suponen una sola columna, así que en los documentos a dos columnas leen cada renglón de izquierda a derecha y mezclan las dos columnas. En el boletín, el CER pasa de 0.13 % a 60.92 %. Las dos tablas del set de validación las lee bien psm 3 (0.63 % y 0.00 %). Como el valor por defecto sigue siendo psm 3, la salida no cambia y `PIPELINE_VERSION` queda en 2.
+**psm elegido: 3.** psm 4 y 6 suponen una sola columna, así que en los documentos a dos columnas leen cada renglón de izquierda a derecha y mezclan las dos columnas. En el boletín, el CER pasa de 0.13 % a 60.92 %. Las dos tablas del set de validación las lee bien psm 3 (0.63 % y 0.00 %).
+
+**Límite de esta validación**: esas dos tablas **no reprodujeron** la falla del doc. 13. psm 3, 4 y 6 dan exactamente el mismo CER en las dos (0.63 % y 0.00 %). Por eso la validación midió el costo de psm 4 y 6 en los documentos a dos columnas, pero **no pudo medir su beneficio en tablas**. Que psm 4 arregle el doc. 13 solo se vio en el corpus de prueba. Un set de validación que incluya tablas que psm 3 lea por columnas queda para `improve-ocr-quality`.
+
+Como el valor por defecto sigue siendo psm 3, la salida no cambia y `PIPELINE_VERSION` queda en 2.
 
 ## 2. Corpus de prueba con el psm elegido (corrida única)
 
@@ -104,9 +108,11 @@ Sin errores.
 | Escaneo limpio | 4.04 % | 2 % | **No cumple** |
 | Escaneo ruidoso | 0.04 % | 8 % | Cumple |
 
-El umbral no se movió. Por la decisión 8 de la propuesta, `test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento` está marcado `xfail(strict=True)`, con la causa en el `reason`, y se resuelve en la change `improve-ocr-quality`. `uv run pytest -m integration` da 3 que pasan y 1 xfailed.
+El umbral no se movió. Por la decisión 8 de la propuesta, `test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento` está marcado `xfail(strict=True)`, con la causa en el `reason`, y se resuelve en la change `improve-ocr-quality`. El `xfail` usa `raises=AssertionError`, así que cualquier otra excepción falla el test en vez de quedar como xfailed. Para comprobar que `strict` funciona, se corrió con `INGEST_OCR_PSM=4` (ronda 3): el test pasa y pytest lo reporta como `XPASS(strict)`, o sea como fallo. Así, cuando el problema se resuelva, la marca no puede quedar olvidada.
 
-Para comprobar que `strict` funciona, se corrió con `INGEST_OCR_PSM=4`: el test pasa y pytest lo reporta como `XPASS(strict)`, o sea como fallo (1 failed, 3 passed). Así, cuando el problema se resuelva, la marca no puede quedar olvidada.
+**Gate de regresión** (decisión 9): `test_escaneo_limpio_no_empeora_respecto_de_la_linea_base` no lleva `xfail`. Falla si el CER limpio supera la línea base de este archivo (`corpus_76145f8_psm3.json`, 4.04 %) + 0,5 pp. El umbral de 2 % es el objetivo; la línea base es el piso que no se puede empeorar. Se comprobó que detecta regresiones: con `INGEST_OCR_LANG=eng` el limpio sube a 5.41 % y el gate falla.
+
+Resultado actual de `uv run pytest -m integration`: 4 que pasan y 1 xfailed. Los tests de integración usan `IngestSettings()`, que lee `INGEST_*` del entorno. Para reproducir estos números, corré sin esas variables.
 
 ## 5. Hallazgos
 

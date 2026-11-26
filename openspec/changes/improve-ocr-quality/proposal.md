@@ -28,7 +28,7 @@ psm 4 y 6 arreglan la tabla del doc. 13, pero mezclan las líneas de los documen
 - **Perfil de escaneo ruidoso más difícil.** Un perfil nuevo, `noisy_scan_v2`, con degradaciones de escaneo real: desenfoque, bajo contraste, manchas o *speckle*, papel con textura y 150 dpi. Su umbral se fija **antes de medir**. Se reporta aparte, sin reemplazar la medición del perfil actual.
 - **Metodología** (la de la decisión 5 de `add-ingest-pipeline`):
   - La regla de decisión se escribe y se commitea en `design.md` antes de medir.
-  - Se usa un set de validación separado, con documentos nuevos y otra semilla: dos columnas, tablas, formularios y texto corrido.
+  - Se usa un set de validación separado, con documentos nuevos y otra semilla: dos columnas, tablas, formularios y texto corrido. Tiene que incluir **tablas que psm 3 lea por columnas**, como el doc. 13. Las dos tablas de la primera validación no reproducían esa falla (psm 3, 4 y 6 daban el mismo CER), así que esa validación no pudo medir el beneficio de psm 4 en tablas.
   - El corpus de prueba se corre una sola vez con el candidato elegido.
   - Todas las corridas se versionan en `evals/runs/ingest/`.
 - **Cierre del escenario.** Si el escaneo limpio queda en ≤ 2 %, se saca la marca `xfail` del test de integración. Con `strict=True`, el test va a fallar como XPASS hasta que se saque la marca.

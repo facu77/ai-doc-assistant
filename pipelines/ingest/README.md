@@ -49,13 +49,13 @@ La CLI devuelve `0` si todo se procesó u omitió, `1` si algún documento termi
    - Las imágenes se reescalan según el dpi que declaran, solo si está entre 100 y 600 (72 suele ser el valor por defecto de la aplicación, no el del escáner). Si no declaran un dpi plausible, se asume que ya están a 300. Se aceptan los dpi racionales de TIFF.
    - Ninguna página supera 40 Mpx (`MAX_OCR_PIXELS`). Si haría falta más, se baja la resolución y se le informa al motor el dpi efectivo.
 5. **Normalización.** El texto se pasa a NFC y se colapsan los espacios dentro de cada línea, pero se conservan los saltos de línea. El CER se calcula sobre el texto con todos los blancos colapsados.
-6. **Errores.** Los errores se registran por documento y no cortan el lote:
-   - `unsupported_format`: formato no soportado.
-   - `unreadable_file`: PDF corrupto o cifrado, imagen ilegible o demasiado grande para Pillow, o fallo de pymupdf o Pillow.
-   - `ocr_failed`: el OCR falló.
-   - `invalid_ground_truth`: el texto de referencia existe pero no se puede leer.
+6. **Errores y avisos.** Se registran por documento y no cortan el lote:
+   - `unsupported_format` (error): formato no soportado.
+   - `unreadable_file` (error): el archivo no se puede leer, el PDF está corrupto o cifrado, la imagen es ilegible o demasiado grande para Pillow, o pymupdf o Pillow fallaron al leerlo. Las excepciones de esas librerías se traducen en el adaptador.
+   - `ocr_failed` (error): el OCR falló.
+   - `invalid_ground_truth` (**aviso**): el texto de referencia existe pero no se puede leer. El documento se ingiere igual, sin CER (decisión 10). El reporte cuenta los avisos aparte (`warnings`) y no cambian el código de salida.
 
-   Los errores de programación no se atrapan, para que se vean.
+   Los errores de programación (incluido un `ValueError` o una `ValidationError` del código propio) no se atrapan, para que se vean.
 
 ### Archivos renombrados y duplicados
 
@@ -88,7 +88,7 @@ uv run pytest -m integration   # Tesseract real sobre el corpus: umbrales de CER
 uv run ruff check . && uv run ruff format --check . && uv run mypy
 ```
 
-Hay al menos un test por cada escenario de la spec. Los tests marcados `integration` quedan excluidos por defecto (`addopts = -m 'not integration'`). Los motores falsos están en `tests/fakes.py`:
+Hay al menos un test por cada escenario de la spec. Los tests marcados `integration` quedan excluidos por defecto (`addopts = -m 'not integration'`). Los tests de integración usan `IngestSettings()`, que lee `INGEST_*` del entorno: para reproducir los números versionados en `evals/runs/ingest/`, corré sin esas variables. `TesseractEngine` consulta la versión de Tesseract con timeout (`VERSION_TIMEOUT_S`, 10 s). Los motores falsos están en `tests/fakes.py`:
 
 - `FakeOCREngine` registra el tamaño y el dpi de cada imagen.
 - `FailingOCREngine` falla siempre.
@@ -149,7 +149,8 @@ psm 4 y 6 mezclan las líneas de los documentos a dos columnas (el boletín pasa
 - La reingesta sin cambios omite los 20 documentos en 0,02 s.
 - **El escaneo limpio no cumple, por un solo documento con tabla** (`13-formulario-rendicion-gastos.jpg`). psm 3 lee la columna "Importe" después del resto de la página: los caracteres están bien, pero el orden no.
   - psm 4 o 6 lo arreglarían en este corpus (0,07 %, según las corridas reproducidas `corpus_da01914_psm4.json` y `corpus_da01914_psm6.json`), pero el set de validación muestra que rompen los documentos a dos columnas.
-  - No se ajustó nada más (decisión 5). El test de integración del umbral limpio queda marcado `xfail(strict=True)` (decisión 8): la falla está declarada y es visible en cada corrida. Se resuelve en la change `improve-ocr-quality`. El umbral y la aserción no cambiaron.
+  - No se ajustó nada más (decisión 5). El test de integración del umbral limpio queda marcado `xfail(strict=True, raises=AssertionError)` (decisión 8): la falla está declarada y aparece como `xfailed` cada vez que corre la integración. Al integrar con `main`, eso pasa en `verify.sh` y en la CI con `INTEGRATION=auto|1`, cuando están instalados `pipelines/ingest` y `tesseract`. Se resuelve en la change `improve-ocr-quality`. El umbral y la aserción no cambiaron.
+  - **Gate de regresión** (decisión 9): un test aparte, sin `xfail`, falla si el CER limpio supera la línea base de `corpus_76145f8_psm3.json` (4,04 %) + 0,5 pp. El 2 % sigue siendo el objetivo; la línea base es el piso.
 
 ## Limitaciones
 
