@@ -43,6 +43,9 @@ El RAG solo puede ser tan bueno como el texto que recibe. El POC tiene que demos
    - **Mover el umbral sería hacer trampa**: la métrica deja de informar.
    - **`xfail(strict=True)` es una falla declarada, visible y con vencimiento.** Aparece como `xfailed` en cada corrida, el `reason` dice por qué y dónde se resuelve, y si un día el test pasa, `strict` lo convierte en fallo (XPASS) y obliga a sacar la marca. Se comprobó con `INGEST_OCR_PSM=4`: el test pasa y pytest reporta `XPASS(strict)` como fallo.
 
+9. **Gate de regresión del escaneo limpio** (revisión 2). Hay un test de integración aparte, sin `xfail`, que falla si el CER medio limpio supera la línea base registrada + 0,5 pp. La línea base se lee de `evals/runs/ingest/corpus_76145f8_psm3.json`, no está escrita a mano. Es un gate de regresión, distinto del umbral de 2 % de la spec, que sigue siendo el objetivo. Spec: requisito "Sin regresión de calidad de OCR".
+10. **Un texto de referencia ilegible no bloquea la ingesta** (revisión 2). El documento se ingiere igual, con `cer=None` y el aviso `invalid_ground_truth` con su detalle en el reporte. El reporte cuenta los avisos aparte de los errores, y un aviso no cambia el código de salida de la CLI. Spec: escenario "Texto de referencia ilegible".
+
 ## Preguntas abiertas
 
 Surgieron al implementar (2026-11-24). Las mediciones están en `pipelines/ingest/REPORT.md`.

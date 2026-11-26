@@ -43,6 +43,13 @@ El pipeline SHALL calcular el CER de cada documento que tenga texto de referenci
 - **WHEN** el texto de referencia de un documento existe pero no se puede leer
 - **THEN** el documento se ingiere igual, su CER queda vacío y el reporte registra el aviso `invalid_ground_truth` con su detalle
 
+### Requirement: Sin regresión de calidad de OCR
+El CER medio de los escaneos limpios del corpus MUST NOT superar en más de 0,5 puntos porcentuales la línea base registrada en una corrida versionada (`evals/runs/ingest/`). Este gate de regresión es distinto del umbral del requisito "Calidad de OCR medida" (2 %): el umbral es el objetivo, y el gate impide empeorar mientras el objetivo no se alcanza.
+
+#### Scenario: Escaneo limpio sin regresión
+- **WHEN** se ingestan los documentos del corpus marcados como escaneo limpio
+- **THEN** el CER medio es menor o igual a la línea base registrada más 0,5 puntos porcentuales
+
 ### Requirement: Reporte de ingesta
 El pipeline SHALL generar un reporte en JSON y en Markdown con documentos procesados, páginas por método, CER por documento y promedio, tiempo total, tiempo por página y errores.
 

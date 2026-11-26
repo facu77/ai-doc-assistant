@@ -25,6 +25,10 @@ El pipeline corre como CLI (`uv run ingest <dir> --out <dir>`) y también lo va 
 - **Idempotencia**: el `doc_id` es el `sha256` del archivo. La salida guarda el motor de OCR (`ocr_engine`) y `config_hash`: el sha256 de la configuración efectiva (versión del pipeline, umbrales de detección, dpi, idiomas, psm y motor de OCR). Un documento se omite solo si ya existe su salida con el mismo `doc_id` y el mismo `config_hash`. El timeout del OCR no entra en la huella porque no cambia la salida. (Decisión del autor, 2026-11-26.)
 - **Corpus ficticio**: dominio de RRHH y políticas internas de "Acme S.A.", con empleados y datos 100% inventados. `scripts/make_corpus.py` genera PDFs con `reportlab`. Los escaneos se simulan rasterizando, rotando ±2°, agregando ruido gaussiano y bajando a 200 dpi.
 
+### Gate de regresión del escaneo limpio (2026-11-26)
+
+Mientras el escaneo limpio no llegue al umbral de 2 % (test marcado `xfail(strict=True)`), un test de integración aparte, que no es xfail, falla si el CER medio limpio supera la línea base + 0,5 pp. La línea base se lee del archivo versionado `evals/runs/ingest/corpus_76145f8_psm3.json` (4,04 %), no de una constante escrita a mano. Cambiar la línea base exige una corrida nueva versionada, apuntada en ese test, y un commit que lo explique. Hay dos números distintos: el umbral de la spec es el objetivo, y la línea base es el piso que no se puede empeorar. (Decisión del autor.)
+
 ### Selección del psm: regla preregistrada (2026-11-26)
 
 Se escribe y se commitea antes de generar el set de validación y antes de medir. No se cambia después de ver resultados.

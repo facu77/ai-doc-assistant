@@ -2,6 +2,11 @@
 
 Requirement: Calidad de OCR medida. Los umbrales salen de la spec y se fijaron antes de medir
 (proposal.md, "Decisiones tomadas", punto 2): si no se cumplen, no se mueven.
+
+Configuración: `IngestSettings()` (y por lo tanto `TesseractEngine` y `ingest_directory`)
+lee las variables `INGEST_*` del entorno. Para reproducir los números versionados en
+evals/runs/ingest/, corré sin ninguna `INGEST_*` definida. Una variable definida cambia la
+corrida a propósito: así se comprobó el `strict` del xfail con `INGEST_OCR_PSM=4`.
 """
 
 from __future__ import annotations
@@ -17,13 +22,18 @@ from ingest.pdf import open_pdf, render_page_gray
 from ingest.pipeline import DOCUMENTS_SUBDIR, ingest_directory, load_document
 from ingest.settings import IngestSettings
 from ingest.tesseract import TesseractEngine
-from tests.conftest import CORPUS_DIR
+from tests.conftest import CORPUS_DIR, REPO_ROOT
 
 pytestmark = pytest.mark.integration
 
 CLEAN_SCAN_MAX_CER = 0.02  # spec: "el CER medio es menor o igual a 2%"
 NOISY_SCAN_MAX_CER = 0.08  # spec: "el CER medio es menor o igual a 8%"
 STAMPED_DOC = "20-constancia-capacitacion.pdf"
+
+# Gate de regresión (decisión 9, design.md): la línea base se lee de la corrida versionada,
+# no se escribe a mano. Para moverla hace falta una corrida nueva versionada y un commit.
+CLEAN_SCAN_BASELINE_RUN = REPO_ROOT / "evals" / "runs" / "ingest" / "corpus_76145f8_psm3.json"
+CLEAN_SCAN_REGRESSION_MARGIN = 0.005  # 0,5 puntos porcentuales
 
 
 @pytest.fixture(scope="module")
@@ -52,7 +62,7 @@ CLEAN_SCAN_KNOWN_FAILURE = (
 )
 
 
-@pytest.mark.xfail(strict=True, reason=CLEAN_SCAN_KNOWN_FAILURE)
+@pytest.mark.xfail(strict=True, raises=AssertionError, reason=CLEAN_SCAN_KNOWN_FAILURE)
 def test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento(
     corpus_run: tuple[IngestReport, Path],
 ) -> None:
@@ -61,6 +71,22 @@ def test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento(
     stats = report.cer_by_category["clean_scan"]
     assert stats.documents == 6
     assert stats.mean_cer <= CLEAN_SCAN_MAX_CER
+
+
+def test_escaneo_limpio_no_empeora_respecto_de_la_linea_base(
+    corpus_run: tuple[IngestReport, Path],
+) -> None:
+    """Scenario: Escaneo limpio sin regresión. Es un gate, no el objetivo: el objetivo
+    sigue siendo el 2 % del test marcado xfail."""
+    baseline_report = IngestReport.model_validate_json(
+        CLEAN_SCAN_BASELINE_RUN.read_text(encoding="utf-8")
+    )
+    baseline = baseline_report.cer_by_category["clean_scan"].mean_cer
+    report, _ = corpus_run
+    current = report.cer_by_category["clean_scan"].mean_cer
+    assert current <= baseline + CLEAN_SCAN_REGRESSION_MARGIN, (
+        f"regresión: CER limpio {current:.4%} > línea base {baseline:.4%} + 0,5 pp"
+    )
 
 
 def test_cer_medio_de_escaneos_ruidosos_es_a_lo_sumo_8_por_ciento(
