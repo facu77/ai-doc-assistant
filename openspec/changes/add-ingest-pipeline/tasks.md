@@ -21,7 +21,7 @@
 
 ## 4. Cierre
 
-- [ ] 4.1 Correr `/verify` en verde y la corrida completa con el reporte commiteado en `pipelines/ingest/REPORT.md` (verify en verde y reporte commiteado, pero el escenario de escaneo limpio sigue en rojo: 4,04 % contra 2 %. Queda sin marcar hasta que pase o el autor registre una decisión; ver la pregunta abierta 8)
+- [x] 4.1 Correr `/verify` en verde y la corrida completa con el reporte commiteado en `pipelines/ingest/REPORT.md` (el escenario de escaneo limpio, 4,04 % contra 2 %, queda como `xfail(strict=True)` por la decisión 8; se resuelve en `improve-ocr-quality`)
 - [ ] 4.2 Pasar `reviewer` y documentar en el README el CER medido y las limitaciones del corpus sintético (README hecho; falta el `reviewer`)
 
 ## 5. Ronda 2 (decisiones del autor y revisión, 2026-11-26)
@@ -32,3 +32,4 @@
 - [x] 5.4 Correr una sola vez el corpus de prueba con el psm elegido y versionar todas las corridas en `evals/runs/ingest/`
 - [x] 5.5 Agregar la huella de configuración y el motor de OCR a la clave de idempotencia (escenario nuevo en la spec)
 - [x] 5.6 Corregir los hallazgos 3, 4, 5, 8, 9, 10, 11, 12, 13 y 15 de la revisión
+- [x] 5.7 Declarar el escenario de escaneo limpio como `xfail(strict=True)` y crear la change `improve-ocr-quality` (decisión 8)

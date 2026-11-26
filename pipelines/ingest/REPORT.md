@@ -104,7 +104,9 @@ Sin errores.
 | Escaneo limpio | 4.04 % | 2 % | **No cumple** |
 | Escaneo ruidoso | 0.04 % | 8 % | Cumple |
 
-`uv run pytest -m integration` da 1 test fallado (`test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento`) y 3 que pasan. El umbral no se movió.
+El umbral no se movió. Por la decisión 8 de la propuesta, `test_cer_medio_de_escaneos_limpios_es_a_lo_sumo_2_por_ciento` está marcado `xfail(strict=True)`, con la causa en el `reason`, y se resuelve en la change `improve-ocr-quality`. `uv run pytest -m integration` da 3 que pasan y 1 xfailed.
+
+Para comprobar que `strict` funciona, se corrió con `INGEST_OCR_PSM=4`: el test pasa y pytest lo reporta como `XPASS(strict)`, o sea como fallo (1 failed, 3 passed). Así, cuando el problema se resuelva, la marca no puede quedar olvidada.
 
 ## 5. Hallazgos
 

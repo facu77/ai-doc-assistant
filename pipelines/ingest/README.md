@@ -149,7 +149,7 @@ psm 4 y 6 mezclan las líneas de los documentos a dos columnas (el boletín pasa
 - La reingesta sin cambios omite los 20 documentos en 0,02 s.
 - **El escaneo limpio no cumple, por un solo documento con tabla** (`13-formulario-rendicion-gastos.jpg`). psm 3 lee la columna "Importe" después del resto de la página: los caracteres están bien, pero el orden no.
   - psm 4 o 6 lo arreglarían en este corpus (0,07 %, según las corridas reproducidas `corpus_da01914_psm4.json` y `corpus_da01914_psm6.json`), pero el set de validación muestra que rompen los documentos a dos columnas.
-  - Siguiendo la decisión 5, el test de integración del umbral limpio queda en rojo y no se ajusta nada más.
+  - No se ajustó nada más (decisión 5). El test de integración del umbral limpio queda marcado `xfail(strict=True)` (decisión 8): la falla está declarada y es visible en cada corrida. Se resuelve en la change `improve-ocr-quality`. El umbral y la aserción no cambiaron.
 
 ## Limitaciones
 

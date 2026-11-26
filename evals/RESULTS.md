@@ -21,3 +21,5 @@ El psm se eligió sobre el set de validación con una regla escrita antes de med
 | 2026-11-26 | da01914 | Prueba, psm 3 | `corpus_da01914_psm3.json` | 0,00 % | 4,04 % | 0,04 % | 0,00 % | 1,64 % | 0,97 | Ronda 1, reproducida |
 | 2026-11-26 | da01914 | Prueba, psm 4 | `corpus_da01914_psm4.json` | 0,00 % | 0,07 % | 0,04 % | 0,00 % | 0,05 % | 0,95 | Experimento de la ronda 1, reproducido; se eligió mirando el set de prueba, no se adoptó |
 | 2026-11-26 | da01914 | Prueba, psm 6 | `corpus_da01914_psm6.json` | 0,00 % | 0,07 % | 0,04 % | 0,00 % | 0,05 % | 0,88 | Experimento de la ronda 1, reproducido; se eligió mirando el set de prueba, no se adoptó |
+
+El escaneo limpio no cumple el umbral en el corpus de prueba. El test del escenario está marcado `xfail(strict=True)` (decisión 8 de `add-ingest-pipeline`) y se resuelve en la change `improve-ocr-quality`.

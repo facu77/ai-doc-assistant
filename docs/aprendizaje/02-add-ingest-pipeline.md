@@ -132,7 +132,7 @@ El orden quedó registrado en la historia de git:
 1. Commit `7768799`: la regla de decisión, escrita en `design.md` antes de que existiera el set de validación. Candidatos psm 3, 4 y 6. Gana el de menor CER medio por página escaneada, y un empate con psm 3 (menos de 0,1 pp) se resuelve a favor de psm 3. Está implementada en `src/ingest/psm_selection.py:37` (`choose_psm`), con tests de la regla antes del código.
 2. Commit `37a4454`: el set de validación. Lleva 2 documentos a dos columnas, 2 formularios con tabla y 2 textos corridos, una composición fijada sin haber medido.
 3. Commit `76145f8`: la medición sobre la validación. Resultado: psm 3 0,13 %, psm 4 11,17 % y psm 6 18,40 %, así que se eligió psm 3.
-4. Commit `ffe6d79`: la única corrida del corpus de prueba con psm 3. El escaneo limpio dio 4,04 %, el test sigue en rojo y no se ajustó nada más.
+4. Commit `ffe6d79`: la única corrida del corpus de prueba con psm 3. El escaneo limpio dio 4,04 % y no se ajustó nada más. El test quedó como falla declarada (sección 10).
 
 **La lección**: en el set de prueba, psm 4 parecía la solución. En la validación, que tiene documentos a dos columnas, rompe la lectura: el boletín pasa de 0,13 % a 60,92 %. Sin la separación, habrías puesto en producción un modo que destruye todos los documentos a dos columnas, y con números que "lo probaban".
 
@@ -214,6 +214,26 @@ El riesgo del aislamiento es **tragarse los errores**. Por eso hay dos salvaguar
 
 > **Pregunta**: ¿por qué `unsupported_format` no genera un JSONL vacío para ese documento?
 
+## 10. Qué mostró la validación, y cómo convivir con un test que no pasa
+
+**La validación evitó un error concreto.** En el corpus de prueba, psm 4 parecía la solución: el escaneo limpio pasaba de 4,04 % a 0,07 %. En el set de validación, el mismo psm 4 llevó el boletín a dos columnas de 0,13 % a **60,92 %**, y el CER medio por página escaneada de 0,13 % a 11,17 %. Si se hubiera adoptado mirando la prueba, cada documento a dos columnas que entrara después se habría ingestado con las líneas mezcladas, y el RAG habría respondido con texto revuelto.
+
+La **regla preregistrada** fue lo que impidió ese error. Antes de ver un solo número de la validación, ya estaba escrito qué se iba a comparar y cómo se desempataba. Con la regla fijada de antemano, no quedó margen para elegir la métrica que favoreciera al candidato que "queríamos" que ganara.
+
+**Tres maneras de manejar un umbral que no se cumple**:
+
+| Opción | Qué pasa | Problema |
+| --- | --- | --- |
+| Mover el umbral (2 % → 5 %) | El test pasa | La métrica deja de informar: el umbral se fijó antes de medir justamente para que no se pudiera hacer esto |
+| Dejar el test en rojo | La falla es honesta | Si la CI corre los tests de integración, queda roja para siempre. Es una *ventana rota*: todos se acostumbran al rojo y la próxima regresión real pasa inadvertida |
+| `@pytest.mark.xfail(strict=True, reason=...)` | La falla queda **declarada**: aparece como `xfailed` en cada corrida, con la causa y el lugar donde se resuelve (`improve-ocr-quality`) | Hay que escribir un buen `reason` y tener una change que lo resuelva |
+
+El `strict=True` le pone vencimiento a la marca. Si el test empieza a pasar (XPASS), pytest lo cuenta como **fallo**, así que nadie se puede olvidar el `xfail` puesto. Se comprobó corriendo la integración con `INGEST_OCR_PSM=4`: el test pasó y la suite dio `XPASS(strict)` → 1 failed. Sin `strict`, ese pase habría quedado como un aviso que nadie lee.
+
+Lo que **no** se tocó: la aserción `stats.mean_cer <= CLEAN_SCAN_MAX_CER` y el umbral. El `xfail` declara que el sistema no cumple el contrato; no cambia el contrato.
+
+> **Pregunta**: ¿por qué un `xfail` sin `strict` es peor que uno con `strict` justo el día en que alguien arregla el problema en `improve-ocr-quality`?
+
 ## Decisiones y su porqué
 
 | Decisión | Por qué | Alternativa descartada |
@@ -223,6 +243,7 @@ El riesgo del aislamiento es **tragarse los errores**. Por eso hay dos salvaguar
 | `untyped_calls_exclude = ["pymupdf"]` y validación en `pdf.py` | pymupdf trae `py.typed`, pero `get_text` no tiene anotaciones. Se aísla en un módulo que chequea cada tipo | Un `# type: ignore` en cada llamada |
 | Un JSONL por documento, con una sola línea | Si concatenás los archivos, obtenés el JSONL del corpus. El nombre del archivo es el `doc_id` | Un JSONL por página: el registro de la spec es por documento |
 | La salida conserva los saltos de línea | `add-rag-core` los usa para detectar títulos al hacer chunking | Aplanar todo, como para el CER |
+| `xfail(strict=True)` en el escenario de escaneo limpio | Falla declarada y visible, con vencimiento; la CI no queda roja para siempre | Dejar el test en rojo o mover el umbral |
 | psm 3 como valor por defecto | Lo eligió la regla preregistrada sobre el set de validación (0,13 % contra 11,17 % y 18,40 %) | psm 4: pasaba el umbral en el set de prueba, pero rompe los documentos a dos columnas |
 | `config_hash` en la clave de idempotencia | Un cambio de configuración tiene que forzar el reprocesamiento | Solo `doc_id` + versión: deja salidas viejas sin avisar |
 | dpi declarado solo entre 100 y 600, con tope de 40 Mpx | 72 dpi es un valor por defecto, no un dato; un plano enorme no puede tumbar el proceso | Creer siempre en el metadato |
