@@ -1,0 +1,12 @@
+{
+  "source": "v06-aviso-mantenimiento-edificio.pdf",
+  "category": "noisy_scan",
+  "title": "Aviso de mantenimiento del edificio",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Aviso de Servicios Generales\nCorte programado de energía\nEl sábado 12 de diciembre de 2026, de 8 a 16 horas, se hará el mantenimiento anual del\ntablero eléctrico de la sede central.\nDurante ese horario no habrá energía ni acceso al edificio. Los servidores del centro de\ndatos funcionan con el generador de respaldo.\nSi necesitás retirar algo antes, avisá a servicios@acme.example hasta el jueves 10 de\ndiciembre."
+    }
+  ]
+}

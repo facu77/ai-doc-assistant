@@ -1,6 +1,7 @@
 """Generador reproducible del corpus ficticio (20 documentos y su texto de referencia).
 
-Uso: `uv run make-corpus --out ../../data/corpus [--seed 20261124]`.
+Uso: `uv run make-corpus --out ../../data/corpus` (corpus de prueba) o
+`uv run make-corpus --set validation --out ../../data/corpus-validation`.
 
 Cómo se simula un escaneo (design.md): se dibuja la página con reportlab, se rasteriza a
 300 dpi, se rota, se le suma ruido gaussiano y se baja a 200 dpi. Los parámetros de cada
@@ -24,7 +25,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader, simpleSplit
 from reportlab.pdfgen.canvas import Canvas
 
-from ingest.corpus.content import DOCUMENTS, DocSpec, Heading, PageSpec, Para, Row
+from ingest.corpus.content import (
+    DOCUMENTS,
+    Block,
+    Columns,
+    DocSpec,
+    Heading,
+    PageSpec,
+    Para,
+    Row,
+)
+from ingest.corpus.validation_content import VALIDATION_DOCUMENTS
 from ingest.models import (
     CorpusEntry,
     CorpusManifest,
@@ -36,6 +47,9 @@ from ingest.pdf import open_pdf, render_page_gray
 
 GENERATOR_VERSION = "1"
 DEFAULT_SEED = 20261124
+"""Semilla del corpus de prueba (`data/corpus`)."""
+VALIDATION_SEED = 20261126
+"""Semilla del set de validación (`data/corpus-validation`), distinta a propósito."""
 GROUND_TRUTH_DIR = "ground_truth"
 MANIFEST_NAME = "manifest.json"
 
@@ -67,7 +81,9 @@ TEXT_WIDTH = PAGE_WIDTH - 2 * MARGIN
 BODY_FONT, BODY_SIZE, BODY_LEADING = "Helvetica", 11.0, 15.0
 HEAD_FONT, HEAD_SIZE, HEAD_LEADING = "Helvetica-Bold", 13.0, 20.0
 PARAGRAPH_GAP = 5.0
-TABLE_COLUMN_X = (MARGIN, MARGIN + 250.0)
+# Posición de cada celda respecto del margen, según la cantidad de celdas de la fila.
+TABLE_COLUMN_OFFSETS: dict[int, tuple[float, ...]] = {2: (0.0, 250.0), 3: (0.0, 150.0, 280.0)}
+COLUMN_GUTTER = 24.0
 STAMP_FONT, STAMP_SIZE = "Helvetica-Bold", 10.0
 STAMP_Y = 50.0
 
@@ -81,38 +97,53 @@ class _Line:
     text: str
 
 
-def layout_page(page: PageSpec) -> tuple[list[_Line], list[str]]:
-    """Ubica cada línea en la página y devuelve también las líneas de referencia.
-
-    La referencia de una fila de tabla son sus celdas separadas por un espacio: las tablas
-    se tratan como texto plano (limitación documentada).
-    """
+def _layout_blocks(
+    blocks: Sequence[Block], x: float, width: float, y: float
+) -> tuple[list[_Line], list[str], float]:
     lines: list[_Line] = []
     reference: list[str] = []
-    y = PAGE_HEIGHT - MARGIN
-    for block in page.blocks:
+    for block in blocks:
         match block:
             case Heading(text=text):
                 y -= HEAD_LEADING
-                for part in simpleSplit(text, HEAD_FONT, HEAD_SIZE, TEXT_WIDTH):
-                    lines.append(_Line(MARGIN, y, HEAD_FONT, HEAD_SIZE, part))
+                for part in simpleSplit(text, HEAD_FONT, HEAD_SIZE, width):
+                    lines.append(_Line(x, y, HEAD_FONT, HEAD_SIZE, part))
                     reference.append(part)
                     y -= HEAD_LEADING
                 y += HEAD_LEADING - PARAGRAPH_GAP
             case Para(text=text):
                 y -= BODY_LEADING
-                for part in simpleSplit(text, BODY_FONT, BODY_SIZE, TEXT_WIDTH):
-                    lines.append(_Line(MARGIN, y, BODY_FONT, BODY_SIZE, part))
+                for part in simpleSplit(text, BODY_FONT, BODY_SIZE, width):
+                    lines.append(_Line(x, y, BODY_FONT, BODY_SIZE, part))
                     reference.append(part)
                     y -= BODY_LEADING
                 y += BODY_LEADING - PARAGRAPH_GAP
             case Row(cells=cells):
                 y -= BODY_LEADING
-                for x, cell in zip(TABLE_COLUMN_X, cells, strict=True):
-                    lines.append(_Line(x, y, BODY_FONT, BODY_SIZE, cell))
+                for offset, cell in zip(TABLE_COLUMN_OFFSETS[len(cells)], cells, strict=True):
+                    lines.append(_Line(x + offset, y, BODY_FONT, BODY_SIZE, cell))
                 reference.append(" ".join(cells))
+            case Columns(left=left, right=right):
+                column_width = (width - COLUMN_GUTTER) / 2
+                left_lines, left_ref, left_y = _layout_blocks(left, x, column_width, y)
+                right_x = x + column_width + COLUMN_GUTTER
+                right_lines, right_ref, right_y = _layout_blocks(right, right_x, column_width, y)
+                lines += left_lines + right_lines
+                reference += left_ref + right_ref
+                y = min(left_y, right_y)
         if y < MARGIN:
             raise ValueError("el contenido no entra en la página")
+    return lines, reference, y
+
+
+def layout_page(page: PageSpec) -> tuple[list[_Line], list[str]]:
+    """Ubica cada línea en la página y devuelve también las líneas de referencia.
+
+    La referencia de una fila de tabla son sus celdas separadas por un espacio: las tablas
+    se tratan como texto plano (limitación documentada). La de un bloque a dos columnas es
+    la columna izquierda completa y después la derecha.
+    """
+    lines, reference, _ = _layout_blocks(page.blocks, MARGIN, TEXT_WIDTH, PAGE_HEIGHT - MARGIN)
     if page.stamp is not None:
         reference.append(page.stamp)
     return lines, reference
@@ -194,12 +225,17 @@ def render_document(doc: DocSpec, rng: np.random.Generator) -> tuple[bytes, list
     return buffer.getvalue(), [reference for _, reference in layouts]
 
 
-def generate_corpus(out_dir: Path, seed: int = DEFAULT_SEED) -> CorpusManifest:
-    """Escribe los 20 documentos en `out_dir` y su referencia en `out_dir/ground_truth/`."""
+def generate_corpus(
+    out_dir: Path, seed: int = DEFAULT_SEED, documents: Sequence[DocSpec] = DOCUMENTS
+) -> CorpusManifest:
+    """Escribe `documents` en `out_dir` y su referencia en `out_dir/ground_truth/`.
+
+    Por defecto, los 20 documentos del corpus de prueba.
+    """
     gt_dir = out_dir / GROUND_TRUTH_DIR
     gt_dir.mkdir(parents=True, exist_ok=True)
     entries: list[CorpusEntry] = []
-    for index, doc in enumerate(DOCUMENTS):
+    for index, doc in enumerate(documents):
         # Un generador por documento: cambiar un documento no altera el ruido de los demás.
         rng = np.random.default_rng([seed, index])
         data, references = render_document(doc, rng)
@@ -239,10 +275,21 @@ def generate_corpus(out_dir: Path, seed: int = DEFAULT_SEED) -> CorpusManifest:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Genera el corpus ficticio de Acme S.A.")
     parser.add_argument("--out", type=Path, required=True, help="Directorio de salida.")
-    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="Semilla del ruido.")
+    parser.add_argument(
+        "--set",
+        dest="which",
+        choices=("corpus", "validation"),
+        default="corpus",
+        help="corpus: los 20 documentos de prueba; validation: los 6 de validación.",
+    )
+    parser.add_argument("--seed", type=int, default=None, help="Semilla del ruido.")
     args = parser.parse_args(argv)
     out_dir: Path = args.out
-    seed: int = args.seed
-    manifest = generate_corpus(out_dir, seed)
+    validation = args.which == "validation"
+    seed: int = (
+        args.seed if args.seed is not None else (VALIDATION_SEED if validation else DEFAULT_SEED)
+    )
+    documents = VALIDATION_DOCUMENTS if validation else DOCUMENTS
+    manifest = generate_corpus(out_dir, seed, documents)
     print(f"{len(manifest.documents)} documentos en {out_dir} (semilla {seed})")
     return 0

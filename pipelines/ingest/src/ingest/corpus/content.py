@@ -30,7 +30,16 @@ class Row:
     cells: tuple[str, ...]
 
 
-Block = Heading | Para | Row
+@dataclass(frozen=True)
+class Columns:
+    """Dos columnas de texto lado a lado (boletines, guías). La referencia es la columna
+    izquierda completa y después la derecha: el orden en que lee una persona."""
+
+    left: tuple[Heading | Para, ...]
+    right: tuple[Heading | Para, ...]
+
+
+Block = Heading | Para | Row | Columns
 
 
 @dataclass(frozen=True)
