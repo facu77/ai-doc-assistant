@@ -38,7 +38,10 @@ from ai_doc_assistant.llm.providers._http_errors import (
 
 PROVIDER = "openai"
 
-# Igual que en Anthropic: en DEBUG el SDK loguea el cuerpo de cada request.
+# openai 3.59 ya no loguea el cuerpo de las requests en DEBUG (solo método y reintentos,
+# `openai/_base_client.py:606`). Igual se fija en WARNING: es defensa en profundidad ante
+# otra versión que vuelva a hacerlo. La política central de logging de los SDKs queda
+# para `add-observability-security`.
 logging.getLogger("openai").setLevel(logging.WARNING)
 
 
@@ -142,3 +145,6 @@ class OpenAIProvider:
         except openai.OpenAIError as exc:
             raise _translate(exc) from exc
         yield StreamEnd(usage=usage)
+
+    async def aclose(self) -> None:
+        await self._client.close()

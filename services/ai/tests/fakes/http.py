@@ -134,7 +134,7 @@ def anthropic_stream_error(
     error_type: str, *, chunks_before: Sequence[str] = (), message: str = "falla simulada"
 ) -> Responder:
     """Stream que responde HTTP 200 y después manda un evento SSE `error` (p. ej. overloaded)."""
-    message_start = {
+    message_start: dict[str, object] = {
         "id": "msg_prueba",
         "type": "message",
         "role": "assistant",

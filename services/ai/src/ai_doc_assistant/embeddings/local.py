@@ -12,14 +12,43 @@ Firmas confirmadas en el paquete instalado (sentence-transformers 6.3.0,
 from __future__ import annotations
 
 import asyncio
+import re
 from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING
 
 from ai_doc_assistant.embeddings.base import Vector
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 EncodeBatch = Callable[[list[str]], list[Vector]]
 
 E5_QUERY_PREFIX = "query: "
 E5_PASSAGE_PREFIX = "passage: "
+
+# Familia e5 "clásica": el último segmento del id empieza con `e5-` o `multilingual-e5-`.
+_E5_NAME = re.compile(r"^(multilingual-)?e5-")
+
+
+def e5_prefixes(model_id: str) -> tuple[str, str]:
+    """Prefijos de consulta y de pasaje que exige el modelo, según su id.
+
+    Regla: los modelos e5 (`intfloat/e5-*`, `intfloat/multilingual-e5-*`) usan
+    `"query: "` y `"passage: "`. Las variantes `*-instruct` usan otro formato
+    (`"Instruct: ...\nQuery: "`) que este POC no implementa, y cualquier otro modelo se
+    usa sin prefijo.
+    """
+    name = model_id.rstrip("/").rsplit("/", 1)[-1].lower()
+    if _E5_NAME.match(name) and "instruct" not in name:
+        return E5_QUERY_PREFIX, E5_PASSAGE_PREFIX
+    return "", ""
+
+
+def load_sentence_transformer(model_id: str) -> SentenceTransformer:
+    """Carga el modelo en CPU (lo descarga la primera vez). Bloqueante y lento."""
+    from sentence_transformers import SentenceTransformer
+
+    return SentenceTransformer(model_id, device="cpu")
 
 
 class LocalEmbedder:
@@ -53,9 +82,7 @@ class LocalEmbedder:
     def from_pretrained(cls, model_id: str, *, batch_size: int) -> LocalEmbedder:
         """Carga el modelo en CPU (lo descarga la primera vez). Es bloqueante y lento:
         llamalo al arrancar, o con `asyncio.to_thread` desde código async."""
-        from sentence_transformers import SentenceTransformer
-
-        model = SentenceTransformer(model_id, device="cpu")
+        model = load_sentence_transformer(model_id)
         dimension = model.get_embedding_dimension()
         if dimension is None:
             raise ValueError(f"el modelo {model_id} no informa la dimensión de sus vectores")
@@ -73,11 +100,14 @@ class LocalEmbedder:
             vectors: list[Vector] = array.tolist()
             return vectors
 
+        query_prefix, passage_prefix = e5_prefixes(model_id)
         return cls(
             model_id=model_id,
             dimension=dimension,
             encode_batch=encode_batch,
             batch_size=batch_size,
+            query_prefix=query_prefix,
+            passage_prefix=passage_prefix,
         )
 
     @property

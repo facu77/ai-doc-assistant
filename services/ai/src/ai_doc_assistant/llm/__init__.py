@@ -15,11 +15,12 @@ from ai_doc_assistant.llm.errors import (
     LLMError,
     LLMProviderError,
     LLMRateLimitError,
+    LLMSchemaError,
     LLMTimeoutError,
     LLMValidationError,
 )
 from ai_doc_assistant.llm.factory import PROVIDERS, build_llm_client
-from ai_doc_assistant.llm.models import LLMResponse, Usage
+from ai_doc_assistant.llm.models import LLMResponse, StructuredResponse, Usage
 from ai_doc_assistant.llm.resilient import ResilientLLMClient
 from ai_doc_assistant.llm.retry import RetryPolicy
 from ai_doc_assistant.llm.settings import DEFAULT_LLM_MODEL, LLMSettings, load_llm_settings
@@ -33,11 +34,13 @@ __all__ = [
     "LLMProviderError",
     "LLMRateLimitError",
     "LLMResponse",
+    "LLMSchemaError",
     "LLMSettings",
     "LLMTimeoutError",
     "LLMValidationError",
     "ResilientLLMClient",
     "RetryPolicy",
+    "StructuredResponse",
     "Usage",
     "build_llm_client",
     "load_llm_settings",

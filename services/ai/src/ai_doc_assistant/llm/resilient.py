@@ -12,16 +12,22 @@ from typing import Literal
 
 from pydantic import ValidationError
 
-from ai_doc_assistant.llm.client import SchemaT
 from ai_doc_assistant.llm.errors import (
     LLMError,
     LLMProviderError,
     LLMTimeoutError,
     LLMValidationError,
 )
-from ai_doc_assistant.llm.models import LLMResponse, Usage
-from ai_doc_assistant.llm.provider import LLMProvider, LLMRequest, StreamEnd, TextDelta
-from ai_doc_assistant.llm.retry import RetryPolicy, is_transient
+from ai_doc_assistant.llm.models import LLMResponse, SchemaT, StructuredResponse, Usage
+from ai_doc_assistant.llm.provider import (
+    LLMProvider,
+    LLMRequest,
+    ProviderResult,
+    StreamEnd,
+    TextDelta,
+)
+from ai_doc_assistant.llm.retry import RetryPolicy
+from ai_doc_assistant.llm.schema import ensure_closed_schema
 
 logger = logging.getLogger("ai_doc_assistant.llm")
 
@@ -90,7 +96,20 @@ class ResilientLLMClient:
         self, prompt: str, *, system: str | None = None, max_tokens: int = 1024
     ) -> LLMResponse:
         request = LLMRequest(prompt=prompt, system=system, max_tokens=max_tokens)
-        return await self._generate(request, "complete")
+        start = self._clock()
+        try:
+            result, attempts = await self._generate(request)
+        except LLMError as error:
+            self._log("complete", error.attempts, start, usage=None, error=error)
+            raise
+        latency_ms = self._log("complete", attempts, start, usage=result.usage)
+        return LLMResponse(
+            text=result.text,
+            usage=result.usage,
+            latency_ms=latency_ms,
+            provider=self._provider.name,
+            model=self._provider.model,
+        )
 
     async def stream(
         self, prompt: str, *, system: str | None = None, max_tokens: int = 1024
@@ -124,7 +143,8 @@ class ResilientLLMClient:
                 # un segundo intento podría generar otro distinto (texto duplicado o mezclado).
                 if not emitted and await self._backoff(attempt, error):
                     continue
-                self._fail(error, attempt, start, "stream")
+                error.attempts = attempt
+                self._log("stream", attempt, start, usage=None, error=error)
                 if error is exc:
                     raise
                 raise error from exc
@@ -138,30 +158,65 @@ class ResilientLLMClient:
         *,
         system: str | None = None,
         max_tokens: int = 1024,
-    ) -> SchemaT:
+    ) -> StructuredResponse[SchemaT]:
+        # Antes de gastar una request: un esquema abierto nunca va a validar como se espera.
+        ensure_closed_schema(schema)
         request = LLMRequest(
             prompt=prompt, system=system, max_tokens=max_tokens, output_schema=schema
         )
+        start = self._clock()
+        attempts = 0
+        input_tokens = output_tokens = 0
         summary = ""
         for _ in range(STRUCTURED_ATTEMPTS):
-            response = await self._generate(request, "structured")
             try:
-                return schema.model_validate_json(response.text)
+                result, used = await self._generate(request)
+            except LLMError as error:
+                error.attempts += attempts
+                usage = Usage(input_tokens=input_tokens, output_tokens=output_tokens)
+                self._log("structured", error.attempts, start, usage=usage, error=error)
+                raise
+            attempts += used
+            input_tokens += result.usage.input_tokens
+            output_tokens += result.usage.output_tokens
+            try:
+                value = schema.model_validate_json(result.text)
             except ValidationError as exc:
                 summary = _summarize(exc)
                 fix = _FIX_INSTRUCTION.format(errors=summary)
                 request = replace(request, prompt=prompt + fix)
-        raise LLMValidationError(
+                continue
+            usage = Usage(input_tokens=input_tokens, output_tokens=output_tokens)
+            latency_ms = self._log("structured", attempts, start, usage=usage)
+            return StructuredResponse[SchemaT](
+                value=value,
+                usage=usage,
+                latency_ms=latency_ms,
+                attempts=attempts,
+                provider=self._provider.name,
+                model=self._provider.model,
+            )
+        invalid = LLMValidationError(
             f"la respuesta no cumplió el esquema {schema.__name__} después de "
-            f"{STRUCTURED_ATTEMPTS} intentos: {summary}",
-            attempts=STRUCTURED_ATTEMPTS,
+            f"{attempts} intentos: {summary}",
+            attempts=attempts,
             schema_name=schema.__name__,
         )
+        usage = Usage(input_tokens=input_tokens, output_tokens=output_tokens)
+        self._log("structured", attempts, start, usage=usage, error=invalid)
+        raise invalid
+
+    async def aclose(self) -> None:
+        await self._provider.aclose()
 
     # ------------------------------------------------------------------ internos
 
-    async def _generate(self, request: LLMRequest, operation: Operation) -> LLMResponse:
-        start = self._clock()
+    async def _generate(self, request: LLMRequest) -> tuple[ProviderResult, int]:
+        """Una llamada con timeout y reintentos. Devuelve el resultado y los intentos usados.
+
+        Si se rinde, levanta un `LLMError` con `attempts` completo. No loguea: eso lo hace
+        la operación pública, una vez por llamada del consumidor.
+        """
         attempt = 0
         while True:
             attempt += 1
@@ -174,29 +229,18 @@ class ResilientLLMClient:
                 error = _as_llm_error(exc, self._provider.name)
                 if await self._backoff(attempt, error):
                     continue
-                self._fail(error, attempt, start, operation)
+                error.attempts = attempt
                 if error is exc:
                     raise
                 raise error from exc
-            latency_ms = self._log(operation, attempt, start, usage=result.usage)
-            return LLMResponse(
-                text=result.text,
-                usage=result.usage,
-                latency_ms=latency_ms,
-                provider=self._provider.name,
-                model=self._provider.model,
-            )
+            return result, attempt
 
     async def _backoff(self, attempt: int, error: LLMError) -> bool:
         """Espera y devuelve True si corresponde otro intento."""
-        if attempt >= self._policy.max_attempts or not is_transient(error):
+        if not self._policy.should_retry(attempt, error):
             return False
         await self._sleep(self._policy.delay_for(attempt, error))
         return True
-
-    def _fail(self, error: LLMError, attempt: int, start: float, operation: Operation) -> None:
-        error.attempts = attempt
-        self._log(operation, attempt, start, usage=None, error=error)
 
     def _log(
         self,

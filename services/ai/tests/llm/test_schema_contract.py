@@ -12,12 +12,12 @@ import json
 
 import anthropic
 import pytest
-from ai_doc_assistant.llm.schema import ensure_closed_schema
 
 from ai_doc_assistant.llm import LLMSchemaError, ResilientLLMClient, RetryPolicy
 from ai_doc_assistant.llm.provider import LLMRequest
 from ai_doc_assistant.llm.providers.anthropic_provider import AnthropicProvider
 from ai_doc_assistant.llm.providers.openai_provider import OpenAIProvider
+from ai_doc_assistant.llm.schema import ensure_closed_schema
 from tests.fakes.http import FakeServer, anthropic_message, openai_completion
 from tests.fakes.schemas import ConArgumentosLibres, LlamadaHerramienta
 

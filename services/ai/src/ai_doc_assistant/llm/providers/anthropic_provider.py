@@ -30,7 +30,9 @@ from ai_doc_assistant.llm.provider import (
 )
 from ai_doc_assistant.llm.providers._http_errors import (
     connection_error,
+    error_from_body_type,
     error_from_status,
+    error_type_from_body,
     timeout_error,
     unexpected_error,
 )
@@ -49,6 +51,10 @@ def _translate(exc: anthropic.AnthropicError) -> LLMError:
     if isinstance(exc, anthropic.APIConnectionError):
         return connection_error(PROVIDER)
     if isinstance(exc, anthropic.APIStatusError):
+        if exc.status_code < 400:
+            # Un evento SSE `error` a mitad del stream llega con el status de la respuesta
+            # (200): lo que dice si es transitorio es `body["error"]["type"]`.
+            return error_from_body_type(PROVIDER, error_type_from_body(exc.body))
         return error_from_status(PROVIDER, exc.status_code, exc.response.headers)
     return unexpected_error(PROVIDER, exc)
 
@@ -124,3 +130,7 @@ class AnthropicProvider:
                 input_tokens=final.usage.input_tokens, output_tokens=final.usage.output_tokens
             )
         )
+
+    async def aclose(self) -> None:
+        # Cierra el cliente HTTP del SDK (también uno inyectado con `http_client`).
+        await self._client.close()

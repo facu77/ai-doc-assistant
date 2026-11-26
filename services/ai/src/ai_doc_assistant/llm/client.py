@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from typing import Protocol, TypeVar
+from typing import Protocol
 
-from pydantic import BaseModel
-
-from ai_doc_assistant.llm.models import LLMResponse
-
-SchemaT = TypeVar("SchemaT", bound=BaseModel)
+from ai_doc_assistant.llm.models import LLMResponse, SchemaT, StructuredResponse
 
 
 class LLMClient(Protocol):
@@ -44,6 +40,14 @@ class LLMClient(Protocol):
         *,
         system: str | None = None,
         max_tokens: int = 1024,
-    ) -> SchemaT:
-        """Respuesta validada contra `schema`; si no valida, `LLMValidationError`."""
+    ) -> StructuredResponse[SchemaT]:
+        """Respuesta validada contra `schema` (un esquema cerrado), con uso e intentos.
+
+        Un esquema abierto es `LLMSchemaError` sin llamar al proveedor; una respuesta que no
+        valida después de los intentos es `LLMValidationError`.
+        """
+        ...
+
+    async def aclose(self) -> None:
+        """Libera las conexiones del proveedor. Llamala al apagar el servicio."""
         ...

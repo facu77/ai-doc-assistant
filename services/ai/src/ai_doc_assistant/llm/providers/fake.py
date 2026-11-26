@@ -88,3 +88,6 @@ class FakeLLMProvider:
         for index, word in enumerate(words):
             yield TextDelta(text=word if index == len(words) - 1 else word + " ")
         yield StreamEnd(usage=self._usage(request, text))
+
+    async def aclose(self) -> None:
+        """Nada que cerrar: no hay conexiones."""

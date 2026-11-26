@@ -41,6 +41,13 @@ def _anthropic(settings: LLMSettings) -> LLMProvider:
 def _openai(settings: LLMSettings) -> LLMProvider:
     from ai_doc_assistant.llm.providers.openai_provider import OpenAIProvider
 
+    # El default de LLM_MODEL es un modelo de Claude: con OpenAI hay que elegirlo a mano.
+    # `model_fields_set` incluye los valores que vinieron del entorno.
+    if "model" not in settings.model_fields_set:
+        raise LLMConfigError(
+            "falta la variable de entorno LLM_MODEL: "
+            "el proveedor openai no tiene modelo por defecto"
+        )
     return OpenAIProvider(
         api_key=_require(settings.openai_api_key, "OPENAI_API_KEY"),
         model=settings.model,

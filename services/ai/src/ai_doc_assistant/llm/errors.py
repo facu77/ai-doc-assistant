@@ -57,3 +57,12 @@ class LLMValidationError(LLMError):
         super().__init__(message)
         self.attempts = attempts
         self.schema_name = schema_name
+
+
+class LLMSchemaError(LLMError):
+    """El esquema pedido no es cerrado (dict libre, `Any`, unión en la raíz).
+
+    Se levanta antes de llamar al proveedor: con un objeto sin propiedades declaradas,
+    `anthropic.transform_schema` deja `{"properties": {}, "additionalProperties": false}`
+    y el modelo no puede llenar nada.
+    """
