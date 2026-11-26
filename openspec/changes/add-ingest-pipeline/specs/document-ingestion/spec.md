@@ -47,11 +47,15 @@ El pipeline SHALL generar un reporte en JSON y en Markdown con documentos proces
 - **THEN** el reporte lista los 20 documentos con estado, método por página y CER, y los totales coinciden con la suma por documento
 
 ### Requirement: Idempotencia
-Reingestar un documento sin cambios MUST NOT duplicar su salida ni volver a procesarlo.
+Reingestar un documento sin cambios en el archivo ni en la configuración MUST NOT duplicar su salida ni volver a procesarlo. La salida SHALL registrar el motor de OCR y una huella de la configuración efectiva con la que se produjo.
 
 #### Scenario: Reingesta
 - **WHEN** se ingesta dos veces el mismo directorio sin cambios
 - **THEN** la segunda corrida reporta 20 documentos omitidos y el `doc_id` de cada uno no cambia
+
+#### Scenario: Cambio de configuración fuerza reprocesamiento
+- **WHEN** se reingesta el mismo directorio sin cambios en los archivos pero con otra configuración de extracción (modo de segmentación, dpi, umbrales de detección, idiomas o motor de OCR)
+- **THEN** los documentos se reprocesan, el `doc_id` no cambia, la salida no se duplica y registra el motor de OCR y la huella de la nueva configuración
 
 ### Requirement: Datos ficticios
 El corpus versionado en el repo MUST ser ficticio y no contener PII real.

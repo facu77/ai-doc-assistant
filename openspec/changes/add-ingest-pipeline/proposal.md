@@ -37,6 +37,7 @@ El RAG solo puede ser tan bueno como el texto que recibe. El POC tiene que demos
 
 5. **Umbral de escaneo limpio: separación entre desarrollo y prueba (opción B de la pregunta abierta 1).** El modo de segmentación (psm) se elige con una regla escrita antes de medir (ver `design.md`, "Selección del psm"). La regla se aplica sobre un set de validación aparte (`data/corpus-validation/`, otra semilla, 6 escaneos con al menos un documento a dos columnas y al menos un formulario con tabla). El corpus original queda como set de prueba: se corre una sola vez con el psm elegido y se reporta tal cual. Si el escaneo limpio sigue por encima del 2 %, el test queda en rojo y no se ajusta nada más.
 6. **Perfil ruidoso**: queda como está en esta change. Un perfil más difícil, con su umbral fijado antes de medir, va a una change posterior.
+7. **La configuración entra en la clave de idempotencia (pregunta abierta 4)**. `IngestedDocument` guarda `ocr_engine` y un hash de la configuración efectiva. Se omite un documento solo si coinciden el `doc_id` y ese hash. La spec suma el escenario "Cambio de configuración fuerza reprocesamiento".
 
 ## Preguntas abiertas
 
@@ -55,7 +56,7 @@ Surgieron al implementar (2026-11-24). Las mediciones están en `pipelines/inges
    - **Recomendación**: A para esta change y B como change futura.
 3. **Estructura de títulos y tablas.** "What Changes" la menciona, pero ningún requirement de la spec la pide, así que no se implementó. La salida conserva los saltos de línea para que `add-rag-core` detecte los títulos.
    - **Recomendación**: resolverla en `add-rag-core`, que es donde se usa.
-4. **Cambiar la configuración no invalida el salteo.** Para decidir si omite un documento, el pipeline mira solo el `doc_id` y la versión del pipeline. Si se reingesta en el mismo directorio con otros umbrales, otro dpi u otro psm, el documento se omite.
+4. **(Resuelta: decisión 7.) Cambiar la configuración no invalida el salteo.** Para decidir si omite un documento, el pipeline mira solo el `doc_id` y la versión del pipeline. Si se reingesta en el mismo directorio con otros umbrales, otro dpi u otro psm, el documento se omite.
    - A. Documentarlo: hoy se usa otro `--out` o se sube la versión.
    - B. Guardar un hash de la configuración junto con la versión.
    - C. Agregar un flag `--force`.
