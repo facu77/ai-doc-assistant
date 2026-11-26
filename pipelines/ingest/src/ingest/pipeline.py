@@ -326,10 +326,14 @@ def _ingest_file(
         )
         return _Outcome(report=report, pages_processed=0)
 
+    # La referencia sirve para medir, no para ingerir: si está rota, el documento se ingiere
+    # igual, sin CER, y queda un aviso en el reporte (decisión 10).
+    warning: str | None = None
     try:
         truth = load_ground_truth(gt_dir, source)
     except (ValidationError, ValueError, OSError) as exc:
-        return failed("invalid_ground_truth", f"texto de referencia ilegible: {exc}")
+        truth = None
+        warning = f"texto de referencia ilegible: {type(exc).__name__}"
     category = truth.category if truth else None
 
     source_format = SUPPORTED_SUFFIXES.get(path.suffix.lower())
@@ -374,6 +378,8 @@ def _ingest_file(
         pages=_page_reports(doc, truth),
         cer=_document_cer(doc, truth),
         seconds=perf_counter() - start,
+        error="invalid_ground_truth" if warning else None,
+        error_detail=warning,
     )
     return _Outcome(report=report, pages_processed=pages_processed)
 

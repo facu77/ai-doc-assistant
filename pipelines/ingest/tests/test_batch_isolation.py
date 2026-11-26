@@ -127,7 +127,7 @@ def test_texto_de_referencia_ilegible_no_bloquea_la_ingesta(
     reporte. Antes (ronda 2) el documento quedaba como error y sin salida.
     """
     write_pdf(in_dir / "a.pdf", [native_page(1)])
-    write_pdf(in_dir / "b.pdf", [native_page(1)])
+    write_pdf(in_dir / "b.pdf", [native_page(2)])  # contenido distinto: si no, es un duplicado
     gt_dir = in_dir / "ground_truth"
     gt_dir.mkdir()
     (gt_dir / "a.pdf.json").write_text("{ esto no es JSON", encoding="utf-8")

@@ -19,7 +19,9 @@ DocumentStatus = Literal["processed", "skipped", "error"]
 """`skipped`: ya existía una salida con el mismo `doc_id` y la misma versión del pipeline."""
 
 ErrorCode = Literal["unsupported_format", "unreadable_file", "ocr_failed", "invalid_ground_truth"]
-"""`invalid_ground_truth`: el texto de referencia del documento existe pero no se puede leer."""
+"""Con estado `error`, el motivo de la falla. `invalid_ground_truth` es la excepción: es un
+aviso (el texto de referencia existe pero no se puede leer) y el documento se ingiere igual,
+con CER vacío."""
 
 Category = Literal["native", "clean_scan", "noisy_scan", "mixed"]
 """Categoría del corpus (sale del texto de referencia, no la infiere el pipeline)."""
@@ -99,6 +101,9 @@ class IngestReport(_Frozen):
     processed: int = Field(ge=0)
     skipped: int = Field(ge=0)
     errors: int = Field(ge=0)
+    warnings: int = Field(
+        ge=0, description="Documentos ingeridos con un aviso (por ejemplo, invalid_ground_truth)."
+    )
     pages_total: int = Field(ge=0)
     pages_by_method: dict[ExtractionMethod, int]
     cer_by_category: dict[Category, CategoryCER]

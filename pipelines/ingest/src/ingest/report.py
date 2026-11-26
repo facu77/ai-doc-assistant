@@ -52,6 +52,7 @@ def build_report(
         processed=statuses["processed"],
         skipped=statuses["skipped"],
         errors=statuses["error"],
+        warnings=sum(1 for d in documents if d.status != "error" and d.error is not None),
         pages_total=sum(doc.page_count for doc in documents),
         pages_by_method={method: methods[method] for method in METHOD_ORDER},
         cer_by_category=by_category,
@@ -87,6 +88,7 @@ def render_markdown(report: IngestReport) -> str:
         f"| Procesados | {report.processed} |",
         f"| Omitidos (sin cambios) | {report.skipped} |",
         f"| Con error | {report.errors} |",
+        f"| Con aviso | {report.warnings} |",
         f"| Páginas | {report.pages_total} |",
         f"| CER medio (documentos con referencia) | {_pct(report.mean_cer)} |",
         f"| Tiempo total | {report.total_seconds:.2f} s |",
@@ -137,6 +139,20 @@ def render_markdown(report: IngestReport) -> str:
         ]
     else:
         lines.append("Sin errores.")
+    lines += [
+        "",
+        "## Avisos",
+        "",
+        "Documentos ingeridos igual, con un aviso (por ejemplo, sin CER).",
+        "",
+    ]
+    warned = [doc for doc in report.documents if doc.status != "error" and doc.error]
+    if warned:
+        lines += [
+            f"- `{doc.source}` ({doc.status}): `{doc.error}`. {doc.error_detail}" for doc in warned
+        ]
+    else:
+        lines.append("Sin avisos.")
     return "\n".join(lines) + "\n"
 
 

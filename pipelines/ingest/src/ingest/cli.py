@@ -1,7 +1,8 @@
 """CLI: `uv run ingest <in_dir> --out <out_dir>`.
 
 Códigos de salida: 0 si todos los documentos se procesaron u omitieron, 1 si alguno terminó
-con error (el resto del lote se procesa igual) y 2 si los argumentos son inválidos.
+con error (el resto del lote se procesa igual) y 2 si los argumentos son inválidos. Un
+aviso (por ejemplo, un texto de referencia ilegible) no cambia el código de salida.
 """
 
 from __future__ import annotations
@@ -62,7 +63,8 @@ def run(argv: Sequence[str] | None = None, *, ocr: OCREngine | None = None) -> i
     json_path, md_path = write_report(report, out_dir)
     print(
         f"{report.documents_total} documentos: {report.processed} procesados, "
-        f"{report.skipped} omitidos, {report.errors} con error. Reporte: {json_path}, {md_path}"
+        f"{report.skipped} omitidos, {report.errors} con error, {report.warnings} con aviso. "
+        f"Reporte: {json_path}, {md_path}"
     )
     return 1 if report.errors else 0
 
