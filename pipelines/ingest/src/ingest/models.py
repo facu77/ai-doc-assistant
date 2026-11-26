@@ -16,7 +16,8 @@ ExtractionMethod = Literal["native", "ocr"]
 SourceFormat = Literal["pdf", "png", "jpeg", "tiff"]
 
 DocumentStatus = Literal["processed", "skipped", "error"]
-"""`skipped`: ya existía una salida con el mismo `doc_id` y la misma versión del pipeline."""
+"""`skipped`: ya existía una salida con el mismo `doc_id` y el mismo `config_hash` (la
+configuración efectiva, que incluye la versión del pipeline)."""
 
 ErrorCode = Literal["unsupported_format", "unreadable_file", "ocr_failed", "invalid_ground_truth"]
 """Con estado `error`, el motivo de la falla. `invalid_ground_truth` es la excepción: es un

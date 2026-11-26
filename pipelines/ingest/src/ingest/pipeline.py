@@ -1,8 +1,10 @@
 """Pipeline de ingesta: de un directorio de PDFs e imágenes a un JSONL por documento.
 
-Por cada archivo: se calcula el `doc_id` (sha256 del archivo), se omite si ya hay salida con
-ese `doc_id` y la misma versión del pipeline, y si no se extrae página por página (capa de
-texto si sirve, OCR si no). Un error en un archivo se registra en el reporte y el lote sigue.
+Por cada archivo se calcula el `doc_id` (sha256 del archivo). El documento se omite si ya
+hay salida con ese `doc_id` y el mismo `config_hash` (la huella de la versión del pipeline,
+los umbrales de detección, el dpi, los idiomas, el psm y el motor de OCR). Si no, se extrae
+página por página: capa de texto si sirve, OCR si no. Una falla de lectura u OCR de un
+archivo se registra en el reporte y el lote sigue; un bug propio se propaga.
 """
 
 from __future__ import annotations
