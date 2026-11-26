@@ -78,15 +78,14 @@ MAX_OCR_PIXELS = 40_000_000
 logger = logging.getLogger(__name__)
 
 
-# Lo que pymupdf y Pillow lanzan ante archivos corruptos, enormes o inesperados.
-# DecompressionBombError no hereda de OSError: hay que nombrarla.
-_UNREADABLE_ERRORS = (
-    PdfReadError,
+# Lo que lanza Pillow ante imágenes corruptas, truncadas o enormes. DecompressionBombError
+# no hereda de OSError: hay que nombrarla. Se atrapan solo alrededor de llamadas a Pillow.
+_IMAGE_READ_ERRORS = (
+    UnidentifiedImageError,
     Image.DecompressionBombError,
     OSError,
-    RuntimeError,
+    EOFError,
     ValueError,
-    TypeError,
 )
 
 
@@ -195,7 +194,7 @@ def _pdf_pages(path: Path, *, ocr: OCREngine, settings: IngestSettings) -> list[
                     dpi = _capped_pdf_dpi(*page_size_points(doc, index), settings.ocr_dpi)
                     image = render_page_gray(doc, index, dpi)
                     pages.append(_ocr_page(number, image, native, ocr=ocr, dpi=dpi))
-    except PdfReadError as exc:
+    except (PdfReadError, OSError) as exc:
         raise _DocumentError("unreadable_file", str(exc)) from exc
     return pages
 
@@ -230,8 +229,8 @@ def _image_pages(path: Path, *, ocr: OCREngine, settings: IngestSettings) -> lis
         with Image.open(path) as image:
             source_dpi = _image_dpi(image)
             frames = list(_frames(image))
-    except (UnidentifiedImageError, OSError) as exc:
-        raise _DocumentError("unreadable_file", str(exc)) from exc
+    except _IMAGE_READ_ERRORS as exc:
+        raise _DocumentError("unreadable_file", f"{type(exc).__name__}: {exc}") from exc
     pages: list[Page] = []
     # Mismo criterio que con los PDF: el OCR recibe la página a `ocr_dpi`. Si la imagen no
     # declara una resolución plausible, se asume que ya está a `ocr_dpi`.
@@ -337,7 +336,10 @@ def _ingest_file(
     if source_format is None:
         return failed("unsupported_format", f"extensión no soportada: {path.suffix or '(sin)'}")
 
-    doc_id = sha256_file(path)
+    try:
+        doc_id = sha256_file(path)
+    except OSError as exc:
+        return failed("unreadable_file", f"no se pudo leer el archivo: {exc}")
     out_path = docs_dir / f"{doc_id}.jsonl"
     status: DocumentStatus
     doc = _existing_output(out_path, run_config_hash)
@@ -347,11 +349,9 @@ def _ingest_file(
         try:
             pages = extract_pages(path, source_format, ocr=ocr, settings=settings)
         except _DocumentError as exc:
+            # Solo llegan acá fallos de lectura traducidos en el borde con pymupdf y Pillow
+            # (y del OCR). Un error de programación no se atrapa: tiene que verse.
             return failed(exc.code, exc.detail, doc_id)
-        except _UNREADABLE_ERRORS as exc:
-            # Fallos de las librerías con un archivo raro: quedan acotados a este documento.
-            # Un error de programación (AttributeError, KeyError...) no se atrapa y se ve.
-            return failed("unreadable_file", f"{type(exc).__name__}: {exc}", doc_id)
         doc = IngestedDocument(
             doc_id=doc_id,
             source=source,
