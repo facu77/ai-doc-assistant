@@ -1,0 +1,477 @@
+{
+  "pipeline_version": "2",
+  "ocr_engine": "tesseract 5.3.4 (spa+eng, psm 3)",
+  "config_hash": "2e4681eb1fd4fda0448a9be6cb325659a1803b8abe980860f8c98757a522214b",
+  "documents_total": 20,
+  "processed": 20,
+  "skipped": 0,
+  "errors": 0,
+  "pages_total": 35,
+  "pages_by_method": {
+    "native": 20,
+    "ocr": 15
+  },
+  "cer_by_category": {
+    "native": {
+      "documents": 8,
+      "mean_cer": 0.0,
+      "max_cer": 0.0
+    },
+    "clean_scan": {
+      "documents": 6,
+      "mean_cer": 0.04035894660894661,
+      "max_cer": 0.23809523809523808
+    },
+    "noisy_scan": {
+      "documents": 4,
+      "mean_cer": 0.0004424778761061947,
+      "max_cer": 0.0017699115044247787
+    },
+    "mixed": {
+      "documents": 2,
+      "mean_cer": 0.0,
+      "max_cer": 0.0
+    }
+  },
+  "mean_cer": 0.01219617955790522,
+  "total_seconds": 33.258590953000066,
+  "pages_processed": 35,
+  "seconds_per_page": 0.9502454558000019,
+  "documents": [
+    {
+      "source": "01-politica-licencias.pdf",
+      "status": "processed",
+      "doc_id": "ae656b7036b0d11a3046948dc8a7d3fa987dd53c5743a6ada910286e16aab669",
+      "category": "native",
+      "page_count": 3,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 3,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.015079708000030223,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "02-politica-viaticos.pdf",
+      "status": "processed",
+      "doc_id": "b82f80cf6913c2da574b90795261b847df3e4db1a3ea01727d5b07db163f6664",
+      "category": "native",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.005319786999962162,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "03-beneficios.pdf",
+      "status": "processed",
+      "doc_id": "af71ca8c6a36b9ad7f7cf9ccd4a13ef873ed4d42b822636971d493c25f8843e3",
+      "category": "native",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.004794453999920734,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "04-codigo-de-conducta.pdf",
+      "status": "processed",
+      "doc_id": "1d11f9e15c045fd471d73d8c8e7bdf0b0ad703f2ea2e4c29dda202e00893387b",
+      "category": "native",
+      "page_count": 3,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 3,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.006178637000175513,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "05-home-office.pdf",
+      "status": "processed",
+      "doc_id": "25046591ffb83fdc4ebae3100c01021064829a2a2aa1ab3ab1822321f3f6c573",
+      "category": "native",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.004553198999929009,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "06-onboarding.pdf",
+      "status": "processed",
+      "doc_id": "085fa3bb011c5570133530a2b7abe5120bcde185d23b5b013d5d2eb9f912bd92",
+      "category": "native",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.004314594000106808,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "07-capacitacion.pdf",
+      "status": "processed",
+      "doc_id": "ae907b2b2afebd2bfe87c76a7b22f9773a13c973f4cdbcb45a229b53630cb30c",
+      "category": "native",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.0035760750001827546,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "08-seguridad-informacion.pdf",
+      "status": "processed",
+      "doc_id": "64e5208f069c6480c8ab70b8085f35f705ebcdb2ed60f34ec7c5d160a0a2d820",
+      "category": "native",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 0.004328212000018539,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "09-formulario-solicitud-vacaciones.pdf",
+      "status": "processed",
+      "doc_id": "b10f13ab24c0f8d017489a1975bee30120975facd580b024f74b7ec09dba9e08",
+      "category": "clean_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0021645021645021645
+        }
+      ],
+      "cer": 0.0021645021645021645,
+      "seconds": 2.439923292000003,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "10-memo-aguinaldo.pdf",
+      "status": "processed",
+      "doc_id": "5b3078cf4102f5d0921752a46acc49016cab49dc3b0bf46985a6824214a708e3",
+      "category": "clean_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.001893939393939394
+        }
+      ],
+      "cer": 0.001893939393939394,
+      "seconds": 2.338587526000083,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "11-circular-horario-verano.pdf",
+      "status": "processed",
+      "doc_id": "b6b65659eb5838a6aea8c0ccceb92a679248ed961407a9680264cebe5ff918e9",
+      "category": "clean_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.3985126600000513,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "12-reglamento-comedor.pdf",
+      "status": "processed",
+      "doc_id": "658059f2935bc3d07cb070ea269c00771c1ab3d393b4f2806081fcad7ddc80c4",
+      "category": "clean_scan",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 4.391998158999968,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "13-formulario-rendicion-gastos.jpg",
+      "status": "processed",
+      "doc_id": "38c930d0453e1ea05579ba5415b8dfa814f6045d1ff89e8047edb1ea4438f11f",
+      "category": "clean_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.23809523809523808
+        }
+      ],
+      "cer": 0.23809523809523808,
+      "seconds": 2.479245183999865,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "14-procedimiento-licencia-medica.pdf",
+      "status": "processed",
+      "doc_id": "e5ede661706046368ee7f568655b5b032a441fef066722e569809d3b773a4c94",
+      "category": "clean_scan",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 4.5790694229999644,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "15-acta-comite-seguridad-higiene.pdf",
+      "status": "processed",
+      "doc_id": "61816c4a6cc4d561890781214c2072b4ab7e0b0cff083d8de47214bf5712d5c8",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.231361228000196,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "16-formulario-alta-beneficiario.pdf",
+      "status": "processed",
+      "doc_id": "7fead80c59ded1d9b197aafbf1fb6b77c4b0231a47bda4738fcaa7b988b9001f",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.1163599669998803,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "17-aviso-cambio-turnos.jpg",
+      "status": "processed",
+      "doc_id": "32b36ce1b68297faaeb069fbf5055a402df55a117851ee2ee546962ede65326e",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 1.8046215790000133,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "18-politica-prestamos-personales.pdf",
+      "status": "processed",
+      "doc_id": "262dd54c42662723bda76e12f727ca616de23738f942affb87da4ee2f159737a",
+      "category": "noisy_scan",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "ocr",
+          "cer": 0.0033333333333333335
+        },
+        {
+          "page_number": 2,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0017699115044247787,
+      "seconds": 4.079688226000144,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "19-manual-evaluacion-desempeno.pdf",
+      "status": "processed",
+      "doc_id": "a48dc415a9b2706aa8e3df6d23125a014a06f840af0a785f0af697c6a3fd582b",
+      "category": "mixed",
+      "page_count": 3,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "ocr",
+          "cer": 0.0
+        },
+        {
+          "page_number": 3,
+          "method": "native",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.2085714920001465,
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "source": "20-constancia-capacitacion.pdf",
+      "status": "processed",
+      "doc_id": "b244b2e11b560f9ef084395478a6d39c16c21214d52d49cef1cddd8eb96723b9",
+      "category": "mixed",
+      "page_count": 2,
+      "pages": [
+        {
+          "page_number": 1,
+          "method": "native",
+          "cer": 0.0
+        },
+        {
+          "page_number": 2,
+          "method": "ocr",
+          "cer": 0.0
+        }
+      ],
+      "cer": 0.0,
+      "seconds": 2.1394279520000055,
+      "error": null,
+      "error_detail": null
+    }
+  ]
+}
