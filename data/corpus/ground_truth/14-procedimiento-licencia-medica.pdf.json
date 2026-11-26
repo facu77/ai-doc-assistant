@@ -1,0 +1,17 @@
+{
+  "source": "14-procedimiento-licencia-medica.pdf",
+  "category": "clean_scan",
+  "title": "Procedimiento de licencia médica",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Procedimiento PR-RH-03\nLicencia por enfermedad o accidente\n1. Avisar al responsable directo y a Recursos Humanos antes de las 2 horas del inicio de la\njornada.\n2. Indicar el domicilio donde se encuentra, por si corresponde un control médico.\n3. Cargar el certificado médico en el portal de autogestión dentro de las 48 horas.\n4. El certificado indica el diagnóstico o la causa, los días de reposo y la firma y matrícula del\nprofesional."
+    },
+    {
+      "page_number": 2,
+      "kind": "scan",
+      "text": "5. Si el reposo supera los 3 días, el servicio médico de la compañía puede hacer un control\ndomiciliario.\n6. Para volver al trabajo después de más de 10 días de licencia se presenta el alta médica.\n7. Los accidentes de trabajo se informan en el mismo día a seguridad e higiene, interno\n4425.\nRevisión: octubre de 2026."
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+[project]
+name = "ingest"
+version = "0.1.0"
+description = "Pipeline de ingesta del POC: PDFs e imágenes a JSONL normalizado, con OCR selectivo y CER medido."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "jiwer>=4.0.0",
+    "numpy>=2.5.5",
+    "pillow>=13.0.0",
+    "pydantic>=2.14.4",
+    "pydantic-settings>=2.16.3",
+    "pymupdf>=1.28.2,<2",
+    "pytesseract>=0.3.13",
+    "reportlab>=5.1.1",
+]
+
+[project.scripts]
+ingest = "ingest.cli:main"
+make-corpus = "ingest.corpus.generate:main"
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+    "types-reportlab==5.1.0.20261104",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",   # pycodestyle + pyflakes
+    "I",             # isort
+    "B",             # bugbear
+    "UP",            # pyupgrade
+    "SIM",           # simplify
+    "ASYNC",         # llamadas bloqueantes en código async
+    "S",             # bandit (seguridad)
+    "PT",            # estilo pytest
+    "RUF",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ingest", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert en tests
+# Texto del corpus: párrafos en prosa; partirlos más no aporta legibilidad.
+"src/ingest/corpus/content.py" = ["E501"]
+"src/ingest/corpus/validation_content.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+mypy_path = ["src", "stubs"]
+files = ["src", "tests", "scripts"]
+# pymupdf trae py.typed pero varios métodos (Page.get_text, Document.__getitem__) no tienen
+# anotaciones. Se aíslan en ingest/pdf.py, que valida el tipo de cada valor que devuelven.
+untyped_calls_exclude = ["pymupdf"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Los tests con Tesseract real no corren por defecto: `uv run pytest -m integration`.
+addopts = "-ra --strict-markers --strict-config -m 'not integration'"
+markers = [
+    "integration: requiere Tesseract real (tesseract-ocr + tesseract-ocr-spa); no corre por defecto",
+]

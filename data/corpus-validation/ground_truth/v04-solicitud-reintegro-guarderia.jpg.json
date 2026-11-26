@@ -1,0 +1,12 @@
+{
+  "source": "v04-solicitud-reintegro-guarderia.jpg",
+  "category": "noisy_scan",
+  "title": "Solicitud de reintegro de guardería",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Formulario RH-18\nSolicitud de reintegro de guardería\nEmpleada: Rocío Aguirre\nLegajo: 7215\nHijo: Bruno Aguirre, 2 años\nMes Importe pagado\nAgosto 2026 $ 98.000\nSeptiembre 2026 $ 98.000\nOctubre 2026 $ 104.500\nTotal solicitado: $ 300.500\nTope mensual vigente: $ 120.000 por hijo"
+    }
+  ]
+}

@@ -2,24 +2,35 @@
 
 ## 1. Preparación
 
-- [ ] 1.1 Inicializar `pipelines/ingest` con `uv` (ruff, mypy estricto, pytest), igual que `services/ai`
-- [ ] 1.2 Usar `docs-checker` para confirmar las APIs de `pymupdf`, `pytesseract` y `jiwer` en las versiones instaladas
-- [ ] 1.3 Definir los modelos `IngestedDocument`, `Page` e `IngestReport`, y el Protocol `OCREngine`
-- [ ] 1.4 Escribir el script del corpus ficticio con semilla (20 documentos y su texto de referencia)
+- [x] 1.1 Inicializar `pipelines/ingest` con `uv` (ruff, mypy estricto, pytest), igual que `services/ai`
+- [x] 1.2 Usar `docs-checker` para confirmar las APIs de `pymupdf`, `pytesseract` y `jiwer` en las versiones instaladas
+- [x] 1.3 Definir los modelos `IngestedDocument`, `Page` e `IngestReport`, y el Protocol `OCREngine`
+- [x] 1.4 Escribir el script del corpus ficticio con semilla (20 documentos y su texto de referencia)
 
 ## 2. Tests primero
 
-- [ ] 2.1 Usar `test-writer` para escribir los tests de los escenarios, con un `OCREngine` falso para la CI rápida
-- [ ] 2.2 Escribir los tests `integration` con Tesseract real para los umbrales de CER
+- [x] 2.1 Usar `test-writer` para escribir los tests de los escenarios, con un `OCREngine` falso para la CI rápida
+- [x] 2.2 Escribir los tests `integration` con Tesseract real para los umbrales de CER
 
 ## 3. Implementación
 
-- [ ] 3.1 Extracción nativa y detección por página
-- [ ] 3.2 Adaptador de Tesseract
-- [ ] 3.3 Normalización, `doc_id` e idempotencia
-- [ ] 3.4 Reporte en JSON y Markdown, y CLI `ingest`
+- [x] 3.1 Extracción nativa y detección por página
+- [x] 3.2 Adaptador de Tesseract
+- [x] 3.3 Normalización, `doc_id` e idempotencia
+- [x] 3.4 Reporte en JSON y Markdown, y CLI `ingest`
 
 ## 4. Cierre
 
-- [ ] 4.1 Correr `/verify` en verde y la corrida completa con el reporte commiteado en `pipelines/ingest/REPORT.md`
-- [ ] 4.2 Pasar `reviewer` y documentar en el README el CER medido y las limitaciones del corpus sintético
+- [x] 4.1 Correr `/verify` en verde y la corrida completa con el reporte commiteado en `pipelines/ingest/REPORT.md` (el escenario de escaneo limpio, 4,04 % contra 2 %, queda como `xfail(strict=True)` por la decisión 8; se resuelve en `improve-ocr-quality`)
+- [x] 4.2 Pasar `reviewer` y documentar en el README el CER medido y las limitaciones del corpus sintético (2ª pasada: REQUIERE CAMBIOS menores, cerrados en la ronda 4)
+
+## 5. Ronda 2 (decisiones del autor y revisión, 2026-11-26)
+
+- [x] 5.1 Preregistrar en `design.md` la regla de selección del psm, antes de medir
+- [x] 5.2 Generar el set de validación `data/corpus-validation/` (6 escaneos, otra semilla, dos columnas y tablas)
+- [x] 5.3 Aplicar la regla sobre la validación: psm 3 (0,13 % contra 11,17 % y 18,40 %)
+- [x] 5.4 Correr una sola vez el corpus de prueba con el psm elegido y versionar todas las corridas en `evals/runs/ingest/`
+- [x] 5.5 Agregar la huella de configuración y el motor de OCR a la clave de idempotencia (escenario nuevo en la spec)
+- [x] 5.6 Corregir los hallazgos 3, 4, 5, 8, 9, 10, 11, 12, 13 y 15 de la revisión
+- [x] 5.7 Declarar el escenario de escaneo limpio como `xfail(strict=True)` y crear la change `improve-ocr-quality` (decisión 8)
+- [x] 5.8 Ronda 4: gate de regresión del escaneo limpio (decisión 9), referencia ilegible como aviso (decisión 10) y hallazgos de la 2ª revisión

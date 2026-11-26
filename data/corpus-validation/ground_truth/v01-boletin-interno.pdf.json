@@ -1,0 +1,12 @@
+{
+  "source": "v01-boletin-interno.pdf",
+  "category": "clean_scan",
+  "title": "Boletín interno de noviembre",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Boletín interno, noviembre de 2026\nNovedades de Recursos\nHumanos\nDesde el 1 de diciembre el portal de\nautogestión permite descargar el certificado\nde trabajo sin pedirlo por correo.\nLa encuesta de clima laboral cierra el 5 de\ndiciembre. Respondieron 412 personas, el\n68% de la dotación.\nEl programa de referidos paga $ 250.000\npor cada ingreso que supere el período de\nprueba.\nAgenda del mes\nMartes 3: charla de educación financiera en\nel auditorio, de 13 a 14 horas.\nJueves 12: colecta de juguetes para un\ncomedor del barrio, en la recepción de\ncada sede.\nViernes 20: brindis de fin de año en la\nterraza de la sede central, a partir de las 18\nhoras.\nPara sumar una novedad al próximo boletín, escribí a comunicacion@acme.example."
+    }
+  ]
+}

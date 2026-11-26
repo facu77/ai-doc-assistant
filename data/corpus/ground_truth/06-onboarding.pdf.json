@@ -1,0 +1,17 @@
+{
+  "source": "06-onboarding.pdf",
+  "category": "native",
+  "title": "Guía de incorporación",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Guía de incorporación\nBienvenida o bienvenido a Acme S.A. Esta guía resume lo que pasa en tus primeras\nsemanas.\n1. Primer día\nTu primer día empieza a las 9 horas en la recepción de la sede central. Recursos Humanos\nte entrega la notebook, la credencial y los accesos.\n2. Período de prueba\nEl período de prueba es de 6 meses. A los 3 meses tenés una reunión de seguimiento con\ntu responsable y con Recursos Humanos.\n3. Mentor\nCada persona nueva tiene un mentor asignado durante los primeros 90 días. El mentor es\nde otra área y te ayuda a entender cómo trabaja la compañía."
+    },
+    {
+      "page_number": 2,
+      "kind": "native",
+      "text": "4. Capacitaciones obligatorias\nDentro de los primeros 30 días completás tres cursos en la plataforma de aprendizaje:\ncódigo de conducta, seguridad de la información y prevención de riesgos laborales.\n5. Contactos útiles\nSoporte técnico: soporte@acme.example. Recursos Humanos: personas@acme.example.\nSeguridad e higiene: interno 4425."
+    }
+  ]
+}

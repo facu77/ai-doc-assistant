@@ -39,6 +39,17 @@ El pipeline SHALL calcular el CER de cada documento que tenga texto de referenci
 - **WHEN** se ingestan los documentos del corpus marcados como escaneo ruidoso
 - **THEN** el CER medio es menor o igual a 8%
 
+#### Scenario: Texto de referencia ilegible
+- **WHEN** el texto de referencia de un documento existe pero no se puede leer
+- **THEN** el documento se ingiere igual, su CER queda vacío y el reporte registra el aviso `invalid_ground_truth` con su detalle
+
+### Requirement: Sin regresión de calidad de OCR
+El CER medio de los escaneos limpios del corpus MUST NOT superar en más de 0,5 puntos porcentuales la línea base registrada en una corrida versionada (`evals/runs/ingest/`). Este gate de regresión es distinto del umbral del requisito "Calidad de OCR medida" (2 %): el umbral es el objetivo, y el gate impide empeorar mientras el objetivo no se alcanza.
+
+#### Scenario: Escaneo limpio sin regresión
+- **WHEN** se ingestan los documentos del corpus marcados como escaneo limpio
+- **THEN** el CER medio es menor o igual a la línea base registrada más 0,5 puntos porcentuales
+
 ### Requirement: Reporte de ingesta
 El pipeline SHALL generar un reporte en JSON y en Markdown con documentos procesados, páginas por método, CER por documento y promedio, tiempo total, tiempo por página y errores.
 
@@ -47,11 +58,15 @@ El pipeline SHALL generar un reporte en JSON y en Markdown con documentos proces
 - **THEN** el reporte lista los 20 documentos con estado, método por página y CER, y los totales coinciden con la suma por documento
 
 ### Requirement: Idempotencia
-Reingestar un documento sin cambios MUST NOT duplicar su salida ni volver a procesarlo.
+Reingestar un documento sin cambios en el archivo ni en la configuración MUST NOT duplicar su salida ni volver a procesarlo. La salida SHALL registrar el motor de OCR y una huella de la configuración efectiva con la que se produjo.
 
 #### Scenario: Reingesta
 - **WHEN** se ingesta dos veces el mismo directorio sin cambios
 - **THEN** la segunda corrida reporta 20 documentos omitidos y el `doc_id` de cada uno no cambia
+
+#### Scenario: Cambio de configuración fuerza reprocesamiento
+- **WHEN** se reingesta el mismo directorio sin cambios en los archivos pero con otra configuración de extracción (modo de segmentación, dpi, umbrales de detección, idiomas o motor de OCR)
+- **THEN** los documentos se reprocesan, el `doc_id` no cambia, la salida no se duplica y registra el motor de OCR y la huella de la nueva configuración
 
 ### Requirement: Datos ficticios
 El corpus versionado en el repo MUST ser ficticio y no contener PII real.

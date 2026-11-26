@@ -1,0 +1,6 @@
+schema: spec-driven
+created: 2026-11-26
+# La capability document-ingestion todavía no está en openspec/specs/ (se archiva después
+# del merge de add-ingest-pipeline). Los deltas de spec se escriben al aplicar esta change,
+# sobre la capability ya archivada; ver "Nota sobre las specs" en proposal.md.
+skip_specs: true

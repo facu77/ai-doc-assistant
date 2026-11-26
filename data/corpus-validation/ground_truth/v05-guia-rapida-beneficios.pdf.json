@@ -1,0 +1,12 @@
+{
+  "source": "v05-guia-rapida-beneficios.pdf",
+  "category": "noisy_scan",
+  "title": "Guía rápida de beneficios para nuevos ingresos",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Guía rápida de beneficios\nSalud y bienestar\nPrepaga plan 310 para vos y tu grupo\nfamiliar primario, sin costo.\nReintegro del 50% del gimnasio, con un\ntope de $ 25.000 por mes.\nDía libre en tu cumpleaños.\nDesarrollo\nPresupuesto anual de capacitación de $\n600.000 por persona.\nClases de inglés y portugués en la oficina,\nsin costo.\nHasta 4 horas por semana para estudiar en\nhorario laboral."
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "source": "01-politica-licencias.pdf",
+  "category": "native",
+  "title": "Política de licencias",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Política de licencias\nVersión 3.2. Vigente desde el 1 de marzo de 2026. Responsable: Gerencia de Recursos\nHumanos. Alcance: todo el personal en relación de dependencia de Acme S.A., en todas\nsus sedes.\n1. Vacaciones anuales\nLas vacaciones se calculan según la antigüedad al 31 de diciembre de cada año. Con\nmenos de 5 años de antigüedad corresponden 14 días corridos. Entre 5 y 10 años\ncorresponden 21 días corridos. Entre 10 y 20 años corresponden 28 días corridos. Con más\nde 20 años corresponden 35 días corridos.\nLas vacaciones se solicitan con al menos 30 días de anticipación mediante el formulario\nRH-07. Se pueden fraccionar en hasta 3 períodos, siempre que uno de ellos sea de 7 días\ncorridos o más.\nLos días no gozados no se acumulan de un año al siguiente, salvo autorización escrita de la\nGerencia de Recursos Humanos, que puede extender el plazo hasta el 31 de marzo del año\nsiguiente.\n2. Licencia por enfermedad\nLa persona debe avisar a su responsable y a Recursos Humanos antes de las 2 horas del\ninicio de su jornada. El certificado médico se presenta dentro de las 48 horas por el portal\nde autogestión."
+    },
+    {
+      "page_number": 2,
+      "kind": "native",
+      "text": "3. Licencias especiales\nMatrimonio o unión convivencial registrada: 10 días corridos, que pueden unirse a las\nvacaciones anuales.\nNacimiento o adopción, persona no gestante: 15 días corridos, a tomar dentro de los 30\ndías posteriores al nacimiento o a la guarda con fines de adopción.\nNacimiento, persona gestante: 90 días corridos, según la legislación vigente, más 15 días\nadicionales pagos que otorga Acme S.A. como beneficio propio.\nFallecimiento de cónyuge, hijos o padres: 3 días corridos. Fallecimiento de hermanos: 1 día.\nExámenes de estudios secundarios, terciarios o universitarios: 2 días por examen, con un\nmáximo de 10 días por año calendario. Se presenta la constancia de examen dentro de los\n5 días hábiles.\nMudanza: 1 día por año calendario.\nDonación de sangre: el día de la donación, con constancia del centro de salud.\n4. Licencia sin goce de haberes\nCon al menos 2 años de antigüedad se puede pedir una licencia sin goce de haberes de\nhasta 6 meses. La solicitud se presenta con 45 días de anticipación y requiere la aprobación\nde la Gerencia del área y de Recursos Humanos."
+    },
+    {
+      "page_number": 3,
+      "kind": "native",
+      "text": "5. Procedimiento y registro\nToda licencia se registra en el portal de autogestión. El responsable directo aprueba o\nrechaza la solicitud dentro de los 3 días hábiles. Si no responde en ese plazo, la solicitud\npasa automáticamente a Recursos Humanos.\nRecursos Humanos controla los saldos de vacaciones dos veces por año, en junio y en\ndiciembre, e informa a cada persona su saldo disponible.\n6. Consultas\nLas consultas sobre esta política se envían a licencias@acme.example o se hacen por el\ncanal interno de Recursos Humanos, interno 4410.\nEsta política reemplaza a la versión 3.1 del 15 de enero de 2025."
+    }
+  ]
+}

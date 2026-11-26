@@ -1,0 +1,144 @@
+{
+  "seed": 20261124,
+  "generator_version": "1",
+  "scan_profiles": {
+    "clean_scan": {
+      "max_rotation_deg": 0.5,
+      "min_rotation_deg": 0.0,
+      "noise_sigma": 10.0,
+      "render_dpi": 300,
+      "output_dpi": 200,
+      "jpeg_quality": 85
+    },
+    "noisy_scan": {
+      "max_rotation_deg": 2.0,
+      "min_rotation_deg": 1.0,
+      "noise_sigma": 35.0,
+      "render_dpi": 300,
+      "output_dpi": 200,
+      "jpeg_quality": 60
+    }
+  },
+  "documents": [
+    {
+      "source": "01-politica-licencias.pdf",
+      "category": "native",
+      "page_count": 3,
+      "sha256": "ae656b7036b0d11a3046948dc8a7d3fa987dd53c5743a6ada910286e16aab669"
+    },
+    {
+      "source": "02-politica-viaticos.pdf",
+      "category": "native",
+      "page_count": 2,
+      "sha256": "b82f80cf6913c2da574b90795261b847df3e4db1a3ea01727d5b07db163f6664"
+    },
+    {
+      "source": "03-beneficios.pdf",
+      "category": "native",
+      "page_count": 2,
+      "sha256": "af71ca8c6a36b9ad7f7cf9ccd4a13ef873ed4d42b822636971d493c25f8843e3"
+    },
+    {
+      "source": "04-codigo-de-conducta.pdf",
+      "category": "native",
+      "page_count": 3,
+      "sha256": "1d11f9e15c045fd471d73d8c8e7bdf0b0ad703f2ea2e4c29dda202e00893387b"
+    },
+    {
+      "source": "05-home-office.pdf",
+      "category": "native",
+      "page_count": 2,
+      "sha256": "25046591ffb83fdc4ebae3100c01021064829a2a2aa1ab3ab1822321f3f6c573"
+    },
+    {
+      "source": "06-onboarding.pdf",
+      "category": "native",
+      "page_count": 2,
+      "sha256": "085fa3bb011c5570133530a2b7abe5120bcde185d23b5b013d5d2eb9f912bd92"
+    },
+    {
+      "source": "07-capacitacion.pdf",
+      "category": "native",
+      "page_count": 1,
+      "sha256": "ae907b2b2afebd2bfe87c76a7b22f9773a13c973f4cdbcb45a229b53630cb30c"
+    },
+    {
+      "source": "08-seguridad-informacion.pdf",
+      "category": "native",
+      "page_count": 2,
+      "sha256": "64e5208f069c6480c8ab70b8085f35f705ebcdb2ed60f34ec7c5d160a0a2d820"
+    },
+    {
+      "source": "09-formulario-solicitud-vacaciones.pdf",
+      "category": "clean_scan",
+      "page_count": 1,
+      "sha256": "b10f13ab24c0f8d017489a1975bee30120975facd580b024f74b7ec09dba9e08"
+    },
+    {
+      "source": "10-memo-aguinaldo.pdf",
+      "category": "clean_scan",
+      "page_count": 1,
+      "sha256": "5b3078cf4102f5d0921752a46acc49016cab49dc3b0bf46985a6824214a708e3"
+    },
+    {
+      "source": "11-circular-horario-verano.pdf",
+      "category": "clean_scan",
+      "page_count": 1,
+      "sha256": "b6b65659eb5838a6aea8c0ccceb92a679248ed961407a9680264cebe5ff918e9"
+    },
+    {
+      "source": "12-reglamento-comedor.pdf",
+      "category": "clean_scan",
+      "page_count": 2,
+      "sha256": "658059f2935bc3d07cb070ea269c00771c1ab3d393b4f2806081fcad7ddc80c4"
+    },
+    {
+      "source": "13-formulario-rendicion-gastos.jpg",
+      "category": "clean_scan",
+      "page_count": 1,
+      "sha256": "38c930d0453e1ea05579ba5415b8dfa814f6045d1ff89e8047edb1ea4438f11f"
+    },
+    {
+      "source": "14-procedimiento-licencia-medica.pdf",
+      "category": "clean_scan",
+      "page_count": 2,
+      "sha256": "e5ede661706046368ee7f568655b5b032a441fef066722e569809d3b773a4c94"
+    },
+    {
+      "source": "15-acta-comite-seguridad-higiene.pdf",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "sha256": "61816c4a6cc4d561890781214c2072b4ab7e0b0cff083d8de47214bf5712d5c8"
+    },
+    {
+      "source": "16-formulario-alta-beneficiario.pdf",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "sha256": "7fead80c59ded1d9b197aafbf1fb6b77c4b0231a47bda4738fcaa7b988b9001f"
+    },
+    {
+      "source": "17-aviso-cambio-turnos.jpg",
+      "category": "noisy_scan",
+      "page_count": 1,
+      "sha256": "32b36ce1b68297faaeb069fbf5055a402df55a117851ee2ee546962ede65326e"
+    },
+    {
+      "source": "18-politica-prestamos-personales.pdf",
+      "category": "noisy_scan",
+      "page_count": 2,
+      "sha256": "262dd54c42662723bda76e12f727ca616de23738f942affb87da4ee2f159737a"
+    },
+    {
+      "source": "19-manual-evaluacion-desempeno.pdf",
+      "category": "mixed",
+      "page_count": 3,
+      "sha256": "a48dc415a9b2706aa8e3df6d23125a014a06f840af0a785f0af697c6a3fd582b"
+    },
+    {
+      "source": "20-constancia-capacitacion.pdf",
+      "category": "mixed",
+      "page_count": 2,
+      "sha256": "b244b2e11b560f9ef084395478a6d39c16c21214d52d49cef1cddd8eb96723b9"
+    }
+  ]
+}

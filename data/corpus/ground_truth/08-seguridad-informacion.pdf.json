@@ -1,0 +1,17 @@
+{
+  "source": "08-seguridad-informacion.pdf",
+  "category": "native",
+  "title": "Política de seguridad de la información",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Política de seguridad de la información\nVersión 1.4. Vigente desde el 1 de mayo de 2026. Responsable: Gerencia de Tecnología.\n1. Contraseñas\nLas contraseñas tienen al menos 12 caracteres y no se reutilizan entre sistemas. Se\ncambian de inmediato si hay sospecha de que fueron expuestas.\n2. Autenticación de dos factores\nEl segundo factor de autenticación es obligatorio para el correo, la VPN y todos los sistemas\ncon datos de clientes o de personal.\n3. Clasificación de la información\nLa información se clasifica como pública, interna, confidencial o restringida. Los datos de\nlegajos y sueldos son siempre restringidos."
+    },
+    {
+      "page_number": 2,
+      "kind": "native",
+      "text": "4. Incidentes\nTodo incidente de seguridad, como la pérdida de una notebook o un correo de phishing, se\ninforma dentro de las 24 horas a seguridad@acme.example.\n5. Dispositivos\nLos dispositivos de la compañía tienen el disco cifrado y se bloquean después de 5 minutos\nsin uso.\n6. Revisión\nEsta política se revisa una vez por año o después de un incidente grave."
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "source": "04-codigo-de-conducta.pdf",
+  "category": "native",
+  "title": "Código de conducta",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "native",
+      "text": "Acme S.A. - Código de conducta\nVersión 4.0, aprobada por el Directorio el 10 de febrero de 2026. Este código aplica a\ndirectores, empleados, pasantes y proveedores que trabajan en nombre de Acme S.A.\n1. Principios\nActuamos con integridad, respeto y transparencia. No toleramos la discriminación, el acoso\nni la violencia en ninguna de sus formas.\n2. Conflictos de interés\nToda situación en la que un interés personal pueda influir en una decisión de trabajo se\ndeclara por escrito al Comité de Ética dentro de los 15 días de conocida. Esto incluye\nparticipaciones en proveedores o clientes y relaciones familiares con personas a cargo.\n3. Regalos e invitaciones\nSe pueden aceptar regalos de cortesía de hasta USD 50 de valor. Los regalos de mayor\nvalor se rechazan o se entregan al Comité de Ética. Nunca se aceptan regalos en dinero."
+    },
+    {
+      "page_number": 2,
+      "kind": "native",
+      "text": "4. Confidencialidad\nLa información de clientes, empleados y de la compañía se usa solo para fines laborales. La\nobligación de confidencialidad sigue vigente durante 2 años después de la desvinculación.\n5. Uso de los recursos\nLos equipos, cuentas y sistemas de Acme S.A. se usan para el trabajo. Se permite un uso\npersonal razonable que no afecte la seguridad ni la productividad.\n6. Línea ética\nCualquier persona puede informar una posible violación de este código, de forma anónima,\nen el sitio etica.acme.example o al correo etica@acme.example. El Comité de Ética\nresponde dentro de los 10 días hábiles.\nAcme S.A. prohíbe cualquier represalia contra quien informe de buena fe."
+    },
+    {
+      "page_number": 3,
+      "kind": "native",
+      "text": "7. Sanciones\nEl incumplimiento de este código puede dar lugar a un apercibimiento, una suspensión de\nhasta 30 días o el despido con justa causa, según la gravedad del caso y la legislación\nvigente.\n8. Capacitación y aceptación\nTodo el personal completa el curso de ética dentro de los 30 días de su ingreso y lo renueva\ncada 2 años. Al terminar el curso, cada persona firma la aceptación de este código en el\nportal de autogestión."
+    }
+  ]
+}

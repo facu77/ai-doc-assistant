@@ -1,0 +1,17 @@
+{
+  "source": "12-reglamento-comedor.pdf",
+  "category": "clean_scan",
+  "title": "Reglamento de comedor y espacios comunes",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Reglamento de comedor y espacios comunes\nVigente desde el 1 de septiembre de 2026.\n1. Horarios\nEl comedor funciona de 12 a 15 horas. Cada persona dispone de 45 minutos para almorzar,\nen el turno que acuerde con su equipo.\n2. Reservas\nLas salas de reuniones se reservan desde el calendario corporativo con un máximo de 2\nhoras por reunión.\n3. Limpieza\nCada persona lava y guarda la vajilla que usa. Las heladeras se vacían todos los viernes a\nlas 16 horas."
+    },
+    {
+      "page_number": 2,
+      "kind": "scan",
+      "text": "4. Espacios de descanso\nEl espacio de descanso del tercer piso es de uso libre. Se pide no hacer llamadas de trabajo\nen ese lugar.\n5. Lactario\nEl lactario del segundo piso está disponible de 8 a 19 horas y se reserva por el calendario\ncorporativo.\n6. Incumplimientos\nLos incumplimientos reiterados se informan a Recursos Humanos."
+    }
+  ]
+}

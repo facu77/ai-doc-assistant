@@ -27,6 +27,9 @@ mlruns/
 mlartifacts/
 qdrant_storage/
 evals/runs/*.json
+# Reportes de corridas de ingesta (add-ingest-pipeline): se versionan.
+!evals/runs/ingest/
+!evals/runs/ingest/*.json
 !evals/runs/.gitkeep
 
 # Claude Code (config local por persona)

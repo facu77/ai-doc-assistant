@@ -1,0 +1,12 @@
+{
+  "source": "v02-planilla-horas-extra.pdf",
+  "category": "clean_scan",
+  "title": "Planilla de horas extra de octubre",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Formulario RH-15\nPlanilla de horas extra\nEmpleado: Hernán Vega\nLegajo: 2864\nÁrea: Depósito central\nFecha Horas Motivo\n07/10/2026 2,5 Inventario\n14/10/2026 3 Recepción de mercadería\n21/10/2026 1,5 Despacho urgente\n28/10/2026 4 Cierre de mes\nTotal de horas extra: 11\nAutorizó: Marina Sosa, jefa de Depósito"
+    }
+  ]
+}

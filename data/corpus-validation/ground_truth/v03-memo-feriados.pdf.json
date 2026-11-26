@@ -1,0 +1,12 @@
+{
+  "source": "v03-memo-feriados.pdf",
+  "category": "clean_scan",
+  "title": "Memo de feriados y días no laborables 2027",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Memo interno RH-2026-047\nPara: todo el personal\nAsunto: feriados y días no laborables de 2027\nLos días no laborables que fije el calendario oficial de 2027 se otorgan a todo el personal de\noficinas. El personal de planta mantiene los turnos que organice cada supervisor y cobra el\nadicional correspondiente.\nEl 24 y el 31 de diciembre de 2026 la jornada termina a las 13 horas en todas las sedes.\nLas consultas se envían a personas@acme.example."
+    }
+  ]
+}

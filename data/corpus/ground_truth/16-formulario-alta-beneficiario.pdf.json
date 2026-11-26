@@ -1,0 +1,12 @@
+{
+  "source": "16-formulario-alta-beneficiario.pdf",
+  "category": "noisy_scan",
+  "title": "Formulario de alta de beneficiario del seguro de vida",
+  "pages": [
+    {
+      "page_number": 1,
+      "kind": "scan",
+      "text": "Acme S.A. - Formulario RH-21\nDesignación de beneficiarios del seguro de vida\nEmpleada: Sofía Benítez\nLegajo: 5190\nÁrea: Logística\nBeneficiario 1: Tomás Benítez, hijo, 50%\nBeneficiario 2: Ana Ruiz, madre, 50%\nCapital asegurado: 24 sueldos brutos\nFecha: 3 de agosto de 2026\nRecibido por: Recursos Humanos, sede Pilar"
+    }
+  ]
+}
