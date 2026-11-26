@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class BuscarDocumentos(BaseModel):
@@ -57,3 +57,34 @@ class ConCampoAny(BaseModel):
 
 class UnionEnLaRaiz(RootModel[Herramienta]):
     pass
+
+
+class Vacio(BaseModel):
+    pass
+
+
+class ConModeloAnidadoVacio(BaseModel):
+    """Objeto anidado sin propiedades (no es un dict: es un modelo sin campos)."""
+
+    nombre: str
+    vacio: Vacio
+
+
+class ConExtraAllow(BaseModel):
+    """Tiene propiedades, pero admite otras libres (`additionalProperties: true`)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    nombre: str
+
+
+class ConTupla(BaseModel):
+    """`tuple[int, str]` sale como `prefixItems`, sin `items`."""
+
+    par: tuple[int, str]
+
+
+class ConLista(BaseModel):
+    """Una lista de modelos cerrados sí es válida."""
+
+    resultados: list[BuscarDocumentos]

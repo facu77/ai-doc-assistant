@@ -11,6 +11,7 @@ import pytest
 from pydantic import BaseModel
 
 from ai_doc_assistant.llm import LLMSettings, build_llm_client
+from tests.fakes.schemas import BuscarDocumentos, LlamadaHerramienta, ObtenerPagina
 
 pytestmark = pytest.mark.integration
 
@@ -53,3 +54,21 @@ async def test_salida_estructurada_real(real_settings: LLMSettings) -> None:
     )
     assert saludo.value.saludo
     assert saludo.usage.output_tokens > 0
+
+
+async def test_union_discriminada_real(real_settings: LLMSettings) -> None:
+    """Scenario: Respuesta válida, contra la API real (el esquema cerrado viaja completo)."""
+    client = build_llm_client(real_settings)
+    resultado = await client.complete_structured(
+        "Herramientas: buscar_documentos(query, top_k) y obtener_pagina(doc_id, pagina). "
+        "El usuario pide: 'mostrame la página 3 del documento politica-vacaciones'. "
+        "Elegí la herramienta y sus argumentos.",
+        LlamadaHerramienta,
+        max_tokens=300,
+    )
+    llamada = resultado.value.llamada
+    assert isinstance(llamada, ObtenerPagina | BuscarDocumentos)
+    if isinstance(llamada, ObtenerPagina):
+        assert llamada.pagina == 3
+        assert llamada.doc_id
+    await client.aclose()

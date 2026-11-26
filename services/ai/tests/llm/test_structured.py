@@ -9,6 +9,7 @@ import pytest
 from pydantic import BaseModel
 
 from ai_doc_assistant.llm import (
+    LLMProviderError,
     LLMSchemaError,
     LLMSettings,
     LLMValidationError,
@@ -21,6 +22,10 @@ from tests.fakes.schemas import (
     ConArgumentosLibres,
     ConCampoAny,
     ConDictAnidado,
+    ConExtraAllow,
+    ConLista,
+    ConModeloAnidadoVacio,
+    ConTupla,
     LlamadaHerramienta,
     ObtenerPagina,
     UnionEnLaRaiz,
@@ -132,6 +137,9 @@ async def test_los_errores_transitorios_se_reintentan_aparte() -> None:
         (ConDictAnidado, "extras"),
         (ConCampoAny, "valor"),
         (UnionEnLaRaiz, "(raíz)"),
+        (ConModeloAnidadoVacio, "vacio: objeto sin propiedades declaradas"),
+        (ConExtraAllow, "(raíz): admite propiedades libres"),
+        (ConTupla, "par: array sin `items`"),
     ],
 )
 async def test_esquema_abierto_se_rechaza_antes_de_llamar(
@@ -158,3 +166,36 @@ async def test_el_fake_produce_un_objeto_valido_para_el_esquema() -> None:
     resultado = await client.complete_structured("prompt", LlamadaHerramienta)
     assert isinstance(resultado.value, LlamadaHerramienta)
     assert resultado.provider == "fake"
+
+
+async def test_lista_de_modelos_cerrados_es_valida() -> None:
+    payload = {"resultados": [{"herramienta": "buscar_documentos", "query": "q", "top_k": 1}]}
+    provider = ScriptedProvider([Reply(text=json.dumps(payload))])
+    resultado = await make_client(provider).complete_structured("prompt", ConLista)
+    assert resultado.value.resultados[0].top_k == 1
+
+
+async def test_se_rinde_por_error_del_proveedor_en_la_segunda_ronda(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Ronda 1 no valida; en la ronda 2 el proveedor falla 3 veces con 503."""
+    caplog.set_level(logging.INFO)
+    provider = ScriptedProvider(
+        [Reply(text="no json"), Fail(error_503()), Fail(error_503()), Fail(error_503())]
+    )
+    with pytest.raises(LLMProviderError) as excinfo:
+        await make_client(provider, max_attempts=3).complete_structured(
+            "prompt", LlamadaHerramienta
+        )
+    assert excinfo.value.attempts == 4
+    assert provider.attempts == 4
+    eventos = [e for e in (getattr(r, "llm_call", None) for r in caplog.records) if e]
+    (evento,) = eventos
+    assert isinstance(evento, dict)
+    assert evento["operation"] == "structured"
+    assert evento["outcome"] == "error"
+    assert evento["error_type"] == "LLMProviderError"
+    assert evento["attempts"] == 4
+    # Los tokens de la ronda 1 (la que respondió, aunque no validó) quedan en el log.
+    assert evento["input_tokens"] == 7
+    assert evento["output_tokens"] == 3

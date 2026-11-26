@@ -17,6 +17,7 @@ from ai_doc_assistant.embeddings import (
     load_embeddings_settings,
 )
 from ai_doc_assistant.embeddings import local as local_module
+from ai_doc_assistant.embeddings.local import e5_prefixes
 from tests.fakes.embeddings import FakeSentenceTransformer, RecordingEncoder
 
 
@@ -27,7 +28,8 @@ def _cos(a: list[float], b: list[float]) -> float:
 
 def _local(encoder: RecordingEncoder, batch_size: int = 64) -> LocalEmbedder:
     return LocalEmbedder(
-        model_id="modelo-local-de-prueba",
+        # Id de e5: el constructor deriva los prefijos del id (como `from_pretrained`).
+        model_id="intfloat/multilingual-e5-small",
         dimension=encoder.dimension,
         encode_batch=encoder,
         batch_size=batch_size,
@@ -190,7 +192,6 @@ async def test_fabrica_aplica_batch_size_del_entorno(
         ("intfloat/multilingual-e5-small", "query: ", "passage: "),
         ("intfloat/e5-base-v2", "query: ", "passage: "),
         ("sentence-transformers/all-MiniLM-L6-v2", "", ""),
-        ("intfloat/multilingual-e5-large-instruct", "", ""),
     ],
 )
 async def test_prefijos_solo_para_la_familia_e5(
@@ -211,3 +212,50 @@ async def test_prefijos_solo_para_la_familia_e5(
         [f"{prefijo_consulta}licencia anual"],
         [f"{prefijo_pasaje}licencia anual"],
     ]
+
+
+@pytest.mark.parametrize(
+    "model_id", ["intfloat/multilingual-e5-large-instruct", "intfloat/e5-mistral-7b-instruct"]
+)
+def test_modelo_e5_instruct_se_rechaza(
+    isolated_env: pytest.MonkeyPatch,
+    modelos_cargados: list[FakeSentenceTransformer],
+    model_id: str,
+) -> None:
+    """Scenario: Modelo e5 instruct (formato de prompt no soportado: error de configuración)."""
+    isolated_env.setenv("EMBEDDINGS_PROVIDER", "local")
+    isolated_env.setenv("EMBEDDINGS_MODEL", model_id)
+    with pytest.raises(EmbeddingsConfigError, match="instruct"):
+        build_embedder(load_embeddings_settings())
+    assert modelos_cargados == [], "se rechaza antes de cargar (o descargar) el modelo"
+
+
+def test_constructor_deriva_los_prefijos_del_model_id() -> None:
+    """Los prefijos por defecto del constructor salen de `e5_prefixes(model_id)`."""
+    encoder = RecordingEncoder()
+    otro = LocalEmbedder(
+        model_id="sentence-transformers/all-MiniLM-L6-v2",
+        dimension=encoder.dimension,
+        encode_batch=encoder,
+        batch_size=8,
+    )
+    assert e5_prefixes(otro.model_id) == ("", "")
+    with pytest.raises(EmbeddingsConfigError):
+        LocalEmbedder(
+            model_id="intfloat/multilingual-e5-large-instruct",
+            dimension=encoder.dimension,
+            encode_batch=encoder,
+            batch_size=8,
+        )
+
+
+async def test_constructor_sin_prefijo_para_modelos_no_e5() -> None:
+    encoder = RecordingEncoder()
+    embedder = LocalEmbedder(
+        model_id="sentence-transformers/all-MiniLM-L6-v2",
+        dimension=encoder.dimension,
+        encode_batch=encoder,
+        batch_size=8,
+    )
+    await embedder.embed_queries(["licencia anual"])
+    assert encoder.batches == [["licencia anual"]]
