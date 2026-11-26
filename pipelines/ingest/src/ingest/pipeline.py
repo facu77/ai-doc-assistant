@@ -21,6 +21,7 @@ from pydantic import ValidationError
 
 from ingest.detection import extractable_count, is_native_text, printable_ratio
 from ingest.models import (
+    Category,
     DocumentReport,
     DocumentStatus,
     ErrorCode,
@@ -57,6 +58,18 @@ SUPPORTED_SUFFIXES: dict[str, SourceFormat] = {
 }
 
 logger = logging.getLogger(__name__)
+
+
+# Lo que pymupdf y Pillow lanzan ante archivos corruptos, enormes o inesperados.
+# DecompressionBombError no hereda de OSError: hay que nombrarla.
+_UNREADABLE_ERRORS = (
+    PdfReadError,
+    Image.DecompressionBombError,
+    OSError,
+    RuntimeError,
+    ValueError,
+    TypeError,
+)
 
 
 class _DocumentError(Exception):
@@ -265,8 +278,7 @@ def _ingest_file(
 ) -> _Outcome:
     start = perf_counter()
     source = path.name
-    truth = load_ground_truth(gt_dir, source)
-    category = truth.category if truth else None
+    category: Category | None = None
 
     def failed(code: ErrorCode, detail: str, doc_id: str | None = None) -> _Outcome:
         report = DocumentReport(
@@ -279,6 +291,12 @@ def _ingest_file(
             error_detail=detail,
         )
         return _Outcome(report=report, pages_processed=0)
+
+    try:
+        truth = load_ground_truth(gt_dir, source)
+    except (ValidationError, ValueError, OSError) as exc:
+        return failed("invalid_ground_truth", f"texto de referencia ilegible: {exc}")
+    category = truth.category if truth else None
 
     source_format = SUPPORTED_SUFFIXES.get(path.suffix.lower())
     if source_format is None:
@@ -295,6 +313,10 @@ def _ingest_file(
             pages = extract_pages(path, source_format, ocr=ocr, settings=settings)
         except _DocumentError as exc:
             return failed(exc.code, exc.detail, doc_id)
+        except _UNREADABLE_ERRORS as exc:
+            # Fallos de las librerías con un archivo raro: quedan acotados a este documento.
+            # Un error de programación (AttributeError, KeyError...) no se atrapa y se ve.
+            return failed("unreadable_file", f"{type(exc).__name__}: {exc}", doc_id)
         doc = IngestedDocument(
             doc_id=doc_id,
             source=source,

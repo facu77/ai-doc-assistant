@@ -18,7 +18,8 @@ SourceFormat = Literal["pdf", "png", "jpeg", "tiff"]
 DocumentStatus = Literal["processed", "skipped", "error"]
 """`skipped`: ya existía una salida con el mismo `doc_id` y la misma versión del pipeline."""
 
-ErrorCode = Literal["unsupported_format", "unreadable_file", "ocr_failed"]
+ErrorCode = Literal["unsupported_format", "unreadable_file", "ocr_failed", "invalid_ground_truth"]
+"""`invalid_ground_truth`: el texto de referencia del documento existe pero no se puede leer."""
 
 Category = Literal["native", "clean_scan", "noisy_scan", "mixed"]
 """Categoría del corpus (sale del texto de referencia, no la infiere el pipeline)."""
