@@ -25,6 +25,7 @@ from tests.fakes.http import (
     FakeServer,
     anthropic_message,
     anthropic_stream,
+    anthropic_stream_error,
     raise_timeout,
     status,
 )
@@ -159,7 +160,8 @@ async def test_salida_estructurada_usa_output_config() -> None:
     payload = json.dumps({"categoria": "licencias", "confianza": 0.9})
     server = FakeServer([anthropic_message(payload)])
     resultado = await _client(server).complete_structured("Clasificá", Clasificacion)
-    assert resultado == Clasificacion(categoria="licencias", confianza=0.9)
+    assert resultado.value == Clasificacion(categoria="licencias", confianza=0.9)
+    assert resultado.usage.input_tokens == 11
     (body,) = server.json_bodies()
     output_config = body["output_config"]
     assert isinstance(output_config, dict)
@@ -174,3 +176,73 @@ async def test_los_logs_del_sdk_no_filtran_el_prompt(caplog: pytest.LogCaptureFi
     server = FakeServer([anthropic_message("ok")])
     await _client(server).complete("prompt con secreto-de-prueba")
     assert "secreto-de-prueba" not in caplog.text
+
+
+@pytest.mark.parametrize("tipo", ["overloaded_error", "api_error"])
+async def test_error_sse_transitorio_antes_del_primer_token_se_reintenta(tipo: str) -> None:
+    """Un evento SSE `error` llega con HTTP 200: el tipo del cuerpo decide si es transitorio."""
+    server = FakeServer([anthropic_stream_error(tipo), anthropic_stream(["ok"])])
+    fragmentos = [f async for f in _client(server).stream("prompt")]
+    assert fragmentos == ["ok"]
+    assert len(server.requests) == 2
+
+
+async def test_error_sse_de_rate_limit_es_rate_limit_tipado() -> None:
+    server = FakeServer([anthropic_stream_error("rate_limit_error")])
+    with pytest.raises(LLMRateLimitError):
+        async for _ in _client(server, attempts=1).stream("prompt"):
+            pass
+
+
+async def test_error_sse_permanente_no_se_reintenta() -> None:
+    server = FakeServer([anthropic_stream_error("invalid_request_error"), anthropic_stream(["x"])])
+    with pytest.raises(LLMProviderError) as excinfo:
+        async for _ in _client(server).stream("prompt"):
+            pass
+    assert excinfo.value.transient is False
+    assert len(server.requests) == 1
+
+
+async def test_error_sse_despues_del_primer_token_no_se_reintenta() -> None:
+    server = FakeServer(
+        [
+            anthropic_stream_error("overloaded_error", chunks_before=["parcial"]),
+            anthropic_stream(["x"]),
+        ]
+    )
+    recibidos: list[str] = []
+
+    async def consumir() -> None:
+        async for fragmento in _client(server).stream("prompt"):
+            recibidos.append(fragmento)
+
+    with pytest.raises(LLMProviderError) as excinfo:
+        await consumir()
+    assert recibidos == ["parcial"]
+    assert excinfo.value.transient is True
+    assert len(server.requests) == 1
+
+
+async def test_retry_after_mayor_al_tope_no_espera() -> None:
+    """Scenario: Retry-After mayor que el tope (con el SDK real)."""
+    clock = FakeClock()
+    server = FakeServer([status(429, headers={"retry-after": "120"}), anthropic_message("ok")])
+    with pytest.raises(LLMRateLimitError) as excinfo:
+        await _client(server, clock=clock).complete("prompt")
+    assert excinfo.value.retry_after == 120.0
+    assert clock.sleeps == []
+    assert len(server.requests) == 1
+
+
+async def test_aclose_cierra_el_cliente_http() -> None:
+    server = FakeServer([])
+    http_client = server.client()
+    provider = AnthropicProvider(
+        api_key="clave-fake-para-tests",
+        model="claude-haiku-5-5",
+        timeout_seconds=5,
+        http_client=http_client,
+    )
+    client = ResilientLLMClient(provider, timeout_seconds=5, policy=RetryPolicy(max_attempts=1))
+    await client.aclose()
+    assert http_client.is_closed

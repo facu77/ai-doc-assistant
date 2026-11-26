@@ -16,7 +16,8 @@ from ai_doc_assistant.embeddings import (
     build_embedder,
     load_embeddings_settings,
 )
-from tests.fakes.embeddings import RecordingEncoder
+from ai_doc_assistant.embeddings import local as local_module
+from tests.fakes.embeddings import FakeSentenceTransformer, RecordingEncoder
 
 
 def _cos(a: list[float], b: list[float]) -> float:
@@ -148,3 +149,65 @@ async def test_el_modelo_corre_fuera_del_event_loop() -> None:
     tarea.cancel()
     # Si encode bloqueara el loop, el latido no avanzaría durante los 0,3 s.
     assert ticks >= 10
+
+
+# --- La fábrica conecta EMBEDDINGS_* de punta a punta (sin cargar el modelo real)
+
+
+@pytest.fixture
+def modelos_cargados(isolated_env: pytest.MonkeyPatch) -> list[FakeSentenceTransformer]:
+    cargados: list[FakeSentenceTransformer] = []
+
+    def cargar(model_id: str) -> FakeSentenceTransformer:
+        modelo = FakeSentenceTransformer(model_id=model_id)
+        cargados.append(modelo)
+        return modelo
+
+    isolated_env.setattr(local_module, "load_sentence_transformer", cargar)
+    return cargados
+
+
+async def test_fabrica_aplica_batch_size_del_entorno(
+    isolated_env: pytest.MonkeyPatch, modelos_cargados: list[FakeSentenceTransformer]
+) -> None:
+    """Scenario: Lote grande (EMBEDDINGS_BATCH_SIZE llega desde el entorno)."""
+    isolated_env.setenv("EMBEDDINGS_PROVIDER", "local")
+    isolated_env.setenv("EMBEDDINGS_BATCH_SIZE", "7")
+    embedder = build_embedder(load_embeddings_settings())
+    vectores = await embedder.embed_passages([f"texto {i}" for i in range(20)])
+    assert len(vectores) == 20
+    (modelo,) = modelos_cargados
+    assert modelo.model_id == "intfloat/multilingual-e5-small"
+    assert [len(textos) for textos, _ in modelo.calls] == [7, 7, 6]
+    for _, kwargs in modelo.calls:
+        assert kwargs["normalize_embeddings"] is True
+    assert embedder.dimension == 384
+
+
+@pytest.mark.parametrize(
+    ("model_id", "prefijo_consulta", "prefijo_pasaje"),
+    [
+        ("intfloat/multilingual-e5-small", "query: ", "passage: "),
+        ("intfloat/e5-base-v2", "query: ", "passage: "),
+        ("sentence-transformers/all-MiniLM-L6-v2", "", ""),
+        ("intfloat/multilingual-e5-large-instruct", "", ""),
+    ],
+)
+async def test_prefijos_solo_para_la_familia_e5(
+    isolated_env: pytest.MonkeyPatch,
+    modelos_cargados: list[FakeSentenceTransformer],
+    model_id: str,
+    prefijo_consulta: str,
+    prefijo_pasaje: str,
+) -> None:
+    """Scenario: Modelo fuera de la familia e5 (no recibe los prefijos de e5)."""
+    isolated_env.setenv("EMBEDDINGS_PROVIDER", "local")
+    isolated_env.setenv("EMBEDDINGS_MODEL", model_id)
+    embedder = build_embedder(load_embeddings_settings())
+    await embedder.embed_queries(["licencia anual"])
+    await embedder.embed_passages(["licencia anual"])
+    (modelo,) = modelos_cargados
+    assert [textos for textos, _ in modelo.calls] == [
+        [f"{prefijo_consulta}licencia anual"],
+        [f"{prefijo_pasaje}licencia anual"],
+    ]

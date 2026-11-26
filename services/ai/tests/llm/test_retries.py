@@ -87,10 +87,35 @@ def test_jitter_reparte_la_espera() -> None:
     assert policy.delay_for(3, error) == pytest.approx(0.5)  # 0,25 * 2,0
 
 
-def test_retry_after_pisa_al_backoff_si_es_mayor() -> None:
-    policy = RetryPolicy(max_attempts=5, random=lambda: 1.0)
-    assert policy.delay_for(1, LLMRateLimitError("429", retry_after=2.0)) == 2.0
-    assert policy.delay_for(5, LLMRateLimitError("429", retry_after=2.0)) == 8.0
+def test_retry_after_mas_jitter_acotado() -> None:
+    """Decisión: se espera `Retry-After` + un jitter de hasta `retry_after_jitter` (0,5 s).
+
+    Sin jitter, todos los clientes que recibieron el mismo `Retry-After: 2` volverían en el
+    mismo instante (thundering herd)."""
+    error = LLMRateLimitError("429", retry_after=2.0)
+    assert RetryPolicy(max_attempts=5, random=lambda: 0.0).delay_for(1, error) == 2.0
+    assert RetryPolicy(max_attempts=5, random=lambda: 1.0).delay_for(1, error) == 2.5
+    # El jitter no crece con el intento: está acotado, no es el backoff exponencial.
+    assert RetryPolicy(max_attempts=9, random=lambda: 1.0).delay_for(6, error) == 2.5
+
+
+def test_tope_de_retry_after_por_defecto() -> None:
+    policy = RetryPolicy(max_attempts=3)
+    assert policy.max_retry_after == 30.0
+    assert policy.should_retry(1, LLMRateLimitError("429", retry_after=30.0))
+    assert not policy.should_retry(1, LLMRateLimitError("429", retry_after=30.5))
+
+
+async def test_retry_after_mayor_al_tope_falla_sin_esperar() -> None:
+    """Scenario: Retry-After mayor que el tope."""
+    clock = FakeClock()
+    provider = ScriptedProvider([Fail(LLMRateLimitError("429", retry_after=60.0)), Reply()])
+    with pytest.raises(LLMRateLimitError) as excinfo:
+        await make_client(provider, clock=clock).complete("prompt")
+    assert excinfo.value.retry_after == 60.0
+    assert excinfo.value.attempts == 1
+    assert provider.attempts == 1
+    assert clock.sleeps == []
 
 
 async def test_backoff_real_entre_intentos() -> None:

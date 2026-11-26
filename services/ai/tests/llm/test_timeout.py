@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 
 import pytest
 
 from ai_doc_assistant.llm import LLMTimeoutError, ResilientLLMClient, RetryPolicy
 from tests.fakes.llm import Hang, Reply, ScriptedProvider
+
+# Guardia: si el timeout bajo prueba no funcionara, el test fallaría en 5 s en vez de
+# colgarse una hora en el `Hang` del proveedor falso.
+GUARDIA = 5.0
 
 
 def _client(provider: ScriptedProvider, *, timeout: float, attempts: int) -> ResilientLLMClient:
@@ -22,7 +27,9 @@ async def test_proveedor_que_no_responde() -> None:
     provider = ScriptedProvider([Hang()])
     inicio = time.perf_counter()
     with pytest.raises(LLMTimeoutError) as excinfo:
-        await _client(provider, timeout=1.0, attempts=1).complete("prompt")
+        await asyncio.wait_for(
+            _client(provider, timeout=1.0, attempts=1).complete("prompt"), GUARDIA
+        )
     transcurrido = time.perf_counter() - inicio
     assert transcurrido < 1.5
     assert transcurrido >= 0.9, "tiene que esperar el timeout, no fallar antes"
@@ -33,9 +40,13 @@ async def test_timeout_en_streaming_antes_del_primer_token() -> None:
     """Scenario: Proveedor que no responde (en streaming)."""
     provider = ScriptedProvider([Hang()])
     inicio = time.perf_counter()
-    with pytest.raises(LLMTimeoutError):
+
+    async def consumir() -> None:
         async for _ in _client(provider, timeout=0.2, attempts=1).stream("prompt"):
             pass
+
+    with pytest.raises(LLMTimeoutError):
+        await asyncio.wait_for(consumir(), GUARDIA)
     assert time.perf_counter() - inicio < 0.7
 
 
@@ -47,6 +58,6 @@ async def test_timeout_se_reintenta_si_hay_intentos() -> None:
         timeout_seconds=0.1,
         policy=RetryPolicy(max_attempts=2, random=lambda: 0.0),
     )
-    respuesta = await client.complete("prompt")
+    respuesta = await asyncio.wait_for(client.complete("prompt"), GUARDIA)
     assert respuesta.text == "segundo intento"
     assert provider.attempts == 2

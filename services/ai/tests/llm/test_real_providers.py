@@ -51,4 +51,5 @@ async def test_salida_estructurada_real(real_settings: LLMSettings) -> None:
     saludo = await client.complete_structured(
         "Generá un saludo corto en español rioplatense.", Saludo, max_tokens=200
     )
-    assert saludo.saludo
+    assert saludo.value.saludo
+    assert saludo.usage.output_tokens > 0

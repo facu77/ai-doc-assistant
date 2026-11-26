@@ -121,9 +121,32 @@ async def test_salida_estructurada_usa_response_format() -> None:
     payload = json.dumps({"categoria": "licencias", "confianza": 0.75})
     server = FakeServer([openai_completion(payload)])
     resultado = await _client(server).complete_structured("Clasificá", Clasificacion)
-    assert resultado == Clasificacion(categoria="licencias", confianza=0.75)
+    assert resultado.value == Clasificacion(categoria="licencias", confianza=0.75)
     (body,) = server.json_bodies()
     formato = body["response_format"]
     assert isinstance(formato, dict)
     assert formato["type"] == "json_schema"
     assert formato["json_schema"]["name"] == "Clasificacion"
+
+
+async def test_los_reintentos_del_sdk_estan_desactivados() -> None:
+    """Design: un solo intento nuestro = una sola request (el SDK no reintenta por su cuenta)."""
+    server = FakeServer([status(503), openai_completion("no debería llegar")])
+    with pytest.raises(LLMProviderError) as excinfo:
+        await _client(server, attempts=1).complete("prompt")
+    assert excinfo.value.status_code == 503
+    assert len(server.requests) == 1
+
+
+async def test_aclose_cierra_el_cliente_http() -> None:
+    server = FakeServer([])
+    http_client = server.client()
+    provider = OpenAIProvider(
+        api_key="clave-fake-para-tests",
+        model="modelo-openai-de-prueba",
+        timeout_seconds=5,
+        http_client=http_client,
+    )
+    client = ResilientLLMClient(provider, timeout_seconds=5, policy=RetryPolicy(max_attempts=1))
+    await client.aclose()
+    assert http_client.is_closed

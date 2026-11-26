@@ -83,10 +83,14 @@ class ScriptedProvider:
     model: str = "modelo-de-prueba"
     requests: list[LLMRequest] = field(default_factory=list)
     attempt_times: list[float] = field(default_factory=list)
+    closed: bool = False
 
     @property
     def attempts(self) -> int:
         return len(self.requests)
+
+    async def aclose(self) -> None:
+        self.closed = True
 
     def _next(self, request: LLMRequest) -> Step:
         self.requests.append(request)

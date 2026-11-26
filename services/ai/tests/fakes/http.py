@@ -130,6 +130,52 @@ def anthropic_stream(
     )
 
 
+def anthropic_stream_error(
+    error_type: str, *, chunks_before: Sequence[str] = (), message: str = "falla simulada"
+) -> Responder:
+    """Stream que responde HTTP 200 y después manda un evento SSE `error` (p. ej. overloaded)."""
+    message_start = {
+        "id": "msg_prueba",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-5-5",
+        "content": [],
+        "stop_reason": None,
+        "stop_sequence": None,
+        "usage": {"input_tokens": 11, "output_tokens": 1},
+    }
+    events: list[tuple[str, dict[str, object]]] = [
+        ("message_start", {"type": "message_start", "message": message_start}),
+    ]
+    if chunks_before:
+        events.append(
+            (
+                "content_block_start",
+                {
+                    "type": "content_block_start",
+                    "index": 0,
+                    "content_block": {"type": "text", "text": ""},
+                },
+            )
+        )
+        for chunk in chunks_before:
+            events.append(
+                (
+                    "content_block_delta",
+                    {
+                        "type": "content_block_delta",
+                        "index": 0,
+                        "delta": {"type": "text_delta", "text": chunk},
+                    },
+                )
+            )
+    events.append(("error", {"type": "error", "error": {"type": error_type, "message": message}}))
+    payload = _sse(events)
+    return lambda request: httpx2.Response(
+        200, content=payload, headers={"content-type": "text/event-stream"}, request=request
+    )
+
+
 # ---------------------------------------------------------------- OpenAI
 
 

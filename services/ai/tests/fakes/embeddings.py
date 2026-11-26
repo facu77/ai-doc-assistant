@@ -33,3 +33,30 @@ class RecordingEncoder:
 
     def vector_for(self, text: str) -> list[float]:
         return self._vector(text)
+
+
+@dataclass
+class FakeSentenceTransformer:
+    """Imita la parte de `SentenceTransformer` que usa `LocalEmbedder.from_pretrained`."""
+
+    model_id: str
+    dimension: int = 384
+    calls: list[tuple[list[str], dict[str, object]]] = field(default_factory=list)
+
+    def get_embedding_dimension(self) -> int:
+        return self.dimension
+
+    def encode(self, inputs: list[str], **kwargs: object) -> FakeArray:
+        self.calls.append((list(inputs), dict(kwargs)))
+        encoder = RecordingEncoder(dimension=self.dimension)
+        return FakeArray([encoder.vector_for(t) for t in inputs])
+
+
+@dataclass
+class FakeArray:
+    """Lo único que se usa del `np.ndarray` que devuelve `encode`."""
+
+    rows: list[list[float]]
+
+    def tolist(self) -> list[list[float]]:
+        return self.rows
