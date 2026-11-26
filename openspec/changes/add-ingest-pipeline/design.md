@@ -21,7 +21,7 @@ El pipeline corre como CLI (`uv run ingest <dir> --out <dir>`) y también lo va 
 
 - **Detección nativo/escaneo por página**: se considera nativa una página con 50 caracteres extraíbles o más y un ratio de caracteres imprimibles de 0,9 o más. Si no cumple, se le aplica OCR. Los umbrales son configurables.
 - **OCR**: Tesseract con `spa+eng` a 300 dpi, detrás de un Protocol `OCREngine` para poder comparar motores.
-- **CER**: distancia de Levenshtein a nivel de caracteres (`jiwer.cer`) sobre el texto normalizado (NFC, espacios colapsados).
+- **CER**: distancia de Levenshtein a nivel de caracteres (`jiwer.cer`) sobre el texto normalizado (NFC, espacios colapsados). Si el texto de referencia de un documento existe pero no se puede leer, el documento se ingiere igual: su CER queda vacío y el reporte registra el aviso `invalid_ground_truth`. El texto de referencia sirve para medir, no para ingerir. (Decisión del autor, 2026-11-26.)
 - **Idempotencia**: el `doc_id` es el `sha256` del archivo. La salida guarda el motor de OCR (`ocr_engine`) y `config_hash`: el sha256 de la configuración efectiva (versión del pipeline, umbrales de detección, dpi, idiomas, psm y motor de OCR). Un documento se omite solo si ya existe su salida con el mismo `doc_id` y el mismo `config_hash`. El timeout del OCR no entra en la huella porque no cambia la salida. (Decisión del autor, 2026-11-26.)
 - **Corpus ficticio**: dominio de RRHH y políticas internas de "Acme S.A.", con empleados y datos 100% inventados. `scripts/make_corpus.py` genera PDFs con `reportlab`. Los escaneos se simulan rasterizando, rotando ±2°, agregando ruido gaussiano y bajando a 200 dpi.
 

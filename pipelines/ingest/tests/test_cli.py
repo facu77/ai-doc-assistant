@@ -57,3 +57,18 @@ def test_cli_permite_pisar_los_umbrales_de_deteccion(
 def test_cli_con_directorio_inexistente_devuelve_2(tmp_path: Path, fake_ocr: FakeOCREngine) -> None:
     code = run([str(tmp_path / "no-existe"), "--out", str(tmp_path / "out")], ocr=fake_ocr)
     assert code == 2
+
+
+def test_cli_un_aviso_de_referencia_ilegible_no_cambia_el_codigo_de_salida(
+    in_dir: Path, out_dir: Path, fake_ocr: FakeOCREngine
+) -> None:
+    """Decisión 10: la referencia sirve para medir, no para ingerir."""
+    write_pdf(in_dir / "politica.pdf", [native_page(1)])
+    (in_dir / "ground_truth").mkdir()
+    (in_dir / "ground_truth" / "politica.pdf.json").write_text("{", encoding="utf-8")
+
+    code = run([str(in_dir), "--out", str(out_dir)], ocr=fake_ocr)
+
+    assert code == 0
+    report = IngestReport.model_validate_json((out_dir / JSON_REPORT_NAME).read_text("utf-8"))
+    assert report.warnings == 1

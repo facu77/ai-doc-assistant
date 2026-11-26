@@ -14,6 +14,7 @@ from PIL import Image
 
 import ingest.pipeline as pipeline
 from ingest.pipeline import DOCUMENTS_SUBDIR, ingest_directory
+from ingest.report import render_markdown
 from tests.conftest import native_page, text_image, write_pdf
 from tests.fakes import FakeOCREngine
 
@@ -117,17 +118,64 @@ def test_un_bug_propio_no_se_disfraza_de_unreadable_file(
         ingest_directory(in_dir, out_dir, ocr=fake_ocr)
 
 
-def test_texto_de_referencia_corrupto_queda_acotado_a_su_documento(
+def test_texto_de_referencia_ilegible_no_bloquea_la_ingesta(
     in_dir: Path, out_dir: Path, fake_ocr: FakeOCREngine
 ) -> None:
+    """Scenario: Texto de referencia ilegible (decisión 10 del autor).
+
+    El documento se ingiere igual, con CER vacío y el aviso `invalid_ground_truth` en el
+    reporte. Antes (ronda 2) el documento quedaba como error y sin salida.
+    """
     write_pdf(in_dir / "a.pdf", [native_page(1)])
     write_pdf(in_dir / "b.pdf", [native_page(1)])
     gt_dir = in_dir / "ground_truth"
     gt_dir.mkdir()
     (gt_dir / "a.pdf.json").write_text("{ esto no es JSON", encoding="utf-8")
 
-    result = _by_source(in_dir, out_dir, fake_ocr)
+    report = ingest_directory(in_dir, out_dir, ocr=fake_ocr)
 
-    assert result["a.pdf"] == ("error", "invalid_ground_truth")
-    assert result["b.pdf"] == ("processed", None)
-    assert len(list((out_dir / DOCUMENTS_SUBDIR).glob("*.jsonl"))) == 1
+    by_source = {d.source: d for d in report.documents}
+    a = by_source["a.pdf"]
+    assert a.status == "processed"
+    assert a.error == "invalid_ground_truth"
+    assert a.error_detail is not None
+    assert "referencia" in a.error_detail
+    assert a.cer is None
+    assert a.category is None
+    assert all(page.cer is None for page in a.pages)
+    assert by_source["b.pdf"].status == "processed"
+    assert by_source["b.pdf"].error is None
+    assert report.errors == 0
+    assert report.warnings == 1
+    assert len(list((out_dir / DOCUMENTS_SUBDIR).glob("*.jsonl"))) == 2
+
+
+def test_el_aviso_de_referencia_ilegible_se_mantiene_al_reingestar(
+    in_dir: Path, out_dir: Path, fake_ocr: FakeOCREngine
+) -> None:
+    write_pdf(in_dir / "a.pdf", [native_page(1)])
+    (in_dir / "ground_truth").mkdir()
+    (in_dir / "ground_truth" / "a.pdf.json").write_text("[]", encoding="utf-8")
+    ingest_directory(in_dir, out_dir, ocr=fake_ocr)
+
+    report = ingest_directory(in_dir, out_dir, ocr=fake_ocr)
+
+    [entry] = report.documents
+    assert (entry.status, entry.error) == ("skipped", "invalid_ground_truth")
+    assert report.warnings == 1
+
+
+def test_el_markdown_lista_los_avisos_aparte_de_los_errores(
+    in_dir: Path, out_dir: Path, fake_ocr: FakeOCREngine
+) -> None:
+    write_pdf(in_dir / "a.pdf", [native_page(1)])
+    (in_dir / "ground_truth").mkdir()
+    (in_dir / "ground_truth" / "a.pdf.json").write_text("{", encoding="utf-8")
+
+    report = ingest_directory(in_dir, out_dir, ocr=fake_ocr)
+    markdown = render_markdown(report)
+
+    errors_section, warnings_section = markdown.split("## Errores", 1)[1].split("## Avisos", 1)
+    assert "Sin errores." in errors_section
+    assert "a.pdf" in warnings_section
+    assert "invalid_ground_truth" in warnings_section

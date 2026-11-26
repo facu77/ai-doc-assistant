@@ -39,6 +39,10 @@ El pipeline SHALL calcular el CER de cada documento que tenga texto de referenci
 - **WHEN** se ingestan los documentos del corpus marcados como escaneo ruidoso
 - **THEN** el CER medio es menor o igual a 8%
 
+#### Scenario: Texto de referencia ilegible
+- **WHEN** el texto de referencia de un documento existe pero no se puede leer
+- **THEN** el documento se ingiere igual, su CER queda vacío y el reporte registra el aviso `invalid_ground_truth` con su detalle
+
 ### Requirement: Reporte de ingesta
 El pipeline SHALL generar un reporte en JSON y en Markdown con documentos procesados, páginas por método, CER por documento y promedio, tiempo total, tiempo por página y errores.
 
