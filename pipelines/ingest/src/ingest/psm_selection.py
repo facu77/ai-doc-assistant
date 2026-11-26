@@ -34,14 +34,23 @@ def mean_scanned_page_cer(report: IngestReport) -> float:
     return fmean(cers)
 
 
+def _gap(a: float, b: float) -> float:
+    """a - b redondeado a 1e-9: 0.011 - 0.010 da 0.000999... en float y tiene que contar
+    como 0,1 pp exactos en el borde de la regla."""
+    return round(a - b, 9)
+
+
 def choose_psm(means: Mapping[int, float]) -> int:
+    """Regla de design.md: gana el menor CER; empate con psm 3 (< 0,1 pp) -> psm 3; si psm 4
+    y psm 6 empatan entre sí y los dos le ganan a psm 3 por 0,1 pp o más -> psm 4."""
     if set(means) != set(PSM_CANDIDATES):
         raise ValueError(f"se esperaban los candidatos {PSM_CANDIDATES}, llegaron {sorted(means)}")
     best = min(PSM_CANDIDATES, key=lambda psm: (means[psm], psm))
-    if means[DEFAULT_PSM] - means[best] < TIE_THRESHOLD:
+    if _gap(means[DEFAULT_PSM], means[best]) < TIE_THRESHOLD:
         return DEFAULT_PSM  # empate con psm 3: se queda el valor por defecto
-    if abs(means[4] - means[6]) < TIE_THRESHOLD:
-        return 4  # 4 y 6 empatan y los dos le ganan a 3
+    both_beat_default = all(_gap(means[DEFAULT_PSM], means[psm]) >= TIE_THRESHOLD for psm in (4, 6))
+    if both_beat_default and abs(_gap(means[4], means[6])) < TIE_THRESHOLD:
+        return 4
     return best
 
 
